@@ -1,0 +1,297 @@
+<template>
+  <div ref="containerEl" class="cesium-container"></div>
+</template>
+
+<script setup>
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import * as Cesium from 'cesium'
+
+const props = defineProps({
+  // 台风路径点：[{ lon, lat, grade, wind, pressure, radius, t }]
+  track: { type: Array, default: () => [] },
+  // 是否显示七级风圈
+  showWindCircle: { type: Boolean, default: true },
+  // 相机初始视角：[lon, lat, height]
+  cameraView: { type: Array, default: () => [109.5, 19.0, 600000] },
+  // 是否显示海南岛轮廓
+  showHainanOutline: { type: Boolean, default: true },
+  // 淹没区多边形
+  inundation: { type: Array, default: () => [] }
+})
+
+const containerEl = ref(null)
+let viewer = null
+let resizeObserver = null
+let trackEntities = []
+let outlineEntity = null
+let inundationEntities = []
+let landfallEntity = null
+
+const gradeColor = (grade) => {
+  const g = grade || ''
+  if (g.includes('超强')) return Cesium.Color.fromCssColorString('#cf1322')
+  if (g.includes('强台风')) return Cesium.Color.fromCssColorString('#ff4d4f')
+  if (g === '台风' || g.includes('台风(登陆)')) return Cesium.Color.fromCssColorString('#ff7a45')
+  if (g.includes('强热带')) return Cesium.Color.fromCssColorString('#ff9c40')
+  return Cesium.Color.fromCssColorString('#ffd666')
+}
+
+const hainanOutline = [
+  [110.62, 20.12], [110.98, 20.06], [111.07, 19.86], [110.86, 19.55],
+  [110.98, 19.3], [110.62, 18.86], [110.32, 18.46], [110.06, 18.26],
+  [109.76, 18.2], [109.4, 18.3], [109.06, 18.46], [108.7, 18.72],
+  [108.62, 19.06], [108.76, 19.42], [109.06, 19.66], [109.3, 19.92],
+  [109.66, 20.06], [110.1, 20.14], [110.42, 20.16]
+]
+
+function clearTrack() {
+  trackEntities.forEach((e) => viewer.entities.remove(e))
+  trackEntities = []
+  if (landfallEntity) {
+    viewer.entities.remove(landfallEntity)
+    landfallEntity = null
+  }
+}
+
+function drawTrack() {
+  if (!props.track.length) return
+  clearTrack()
+
+  const positions = props.track.map((p) =>
+    Cesium.Cartesian3.fromDegrees(p.lon, p.lat, 2000)
+  )
+
+  // 分段彩色路径线
+  for (let i = 0; i < positions.length - 1; i++) {
+    const color = gradeColor(props.track[i + 1].grade)
+    const line = viewer.entities.add({
+      polyline: {
+        positions: [positions[i], positions[i + 1]],
+        width: 4,
+        material: new Cesium.PolylineGlowMaterialProperty({
+          glowPower: 0.3,
+          color: color
+        }),
+        clampToGround: false
+      }
+    })
+    trackEntities.push(line)
+  }
+
+  // 各路径点
+  props.track.forEach((p, idx) => {
+    const isLandfall = (p.grade || '').includes('登陆')
+    const color = gradeColor(p.grade)
+
+    if (isLandfall) {
+      // 登陆点：脉冲式 billboard
+      landfallEntity = viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(p.lon, p.lat, 3000),
+        point: {
+          pixelSize: 16,
+          color: Cesium.Color.RED,
+          outlineColor: Cesium.Color.WHITE,
+          outlineWidth: 2
+        },
+        label: {
+          text: '登陆点 · 文昌',
+          font: '13px sans-serif',
+          fillColor: Cesium.Color.WHITE,
+          outlineColor: Cesium.Color.BLACK,
+          outlineWidth: 2,
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          pixelOffset: new Cesium.Cartesian2(0, -20),
+          showBackground: true,
+          backgroundColor: Cesium.Color.fromCssColorString('#0d2244')
+        }
+      })
+      trackEntities.push(landfallEntity)
+    } else {
+      const point = viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(p.lon, p.lat, 2000),
+        point: {
+          pixelSize: 8,
+          color: color,
+          outlineColor: Cesium.Color.WHITE,
+          outlineWidth: 1
+        },
+        label: {
+          text: p.t,
+          font: '11px sans-serif',
+          fillColor: Cesium.Color.fromCssColorString('#9fc4ef'),
+          outlineColor: Cesium.Color.BLACK,
+          outlineWidth: 1,
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          pixelOffset: new Cesium.Cartesian2(0, -14),
+          showBackground: false
+        }
+      })
+      trackEntities.push(point)
+    }
+  })
+
+  // 七级风圈椭圆
+  if (props.showWindCircle) {
+    const landfallPt = props.track.find((p) => (p.grade || '').includes('登陆')) || props.track[0]
+    if (landfallPt) {
+      const circle = viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(landfallPt.lon, landfallPt.lat, 100),
+        ellipse: {
+          semiMajorAxis: landfallPt.radius * 1000,
+          semiMinorAxis: landfallPt.radius * 1000,
+          height: 100,
+          material: Cesium.Color.fromCssColorString('#ff5c5c').withAlpha(0.15),
+          outline: true,
+          outlineColor: Cesium.Color.fromCssColorString('#ff5c5c')
+        }
+      })
+      trackEntities.push(circle)
+    }
+  }
+
+  // 相机飞到路径中心
+  const center = props.track[Math.floor(props.track.length / 2)]
+  viewer.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(center.lon, center.lat - 1, 500000),
+    orientation: {
+      heading: Cesium.Math.toRadians(0),
+      pitch: Cesium.Math.toRadians(-45),
+      roll: 0
+    },
+    duration: 1.5
+  })
+  viewer.scene.requestRender()
+}
+
+function drawHainan() {
+  if (!props.showHainanOutline) return
+  const positions = hainanOutline.map(([lon, lat]) =>
+    Cesium.Cartesian3.fromDegrees(lon, lat, 0)
+  )
+  outlineEntity = viewer.entities.add({
+    polygon: {
+      hierarchy: new Cesium.PolygonHierarchy(positions),
+      material: Cesium.Color.fromCssColorString('#123f73').withAlpha(0.3),
+      outline: true,
+      outlineColor: Cesium.Color.fromCssColorString('#00e5ff'),
+      height: 0
+    }
+  })
+}
+
+function drawInundation() {
+  inundationEntities.forEach((e) => viewer.entities.remove(e))
+  inundationEntities = []
+  if (!props.inundation.length) return
+  props.inundation.forEach((ring) => {
+    const positions = ring.map(([lon, lat]) => Cesium.Cartesian3.fromDegrees(lon, lat, 0))
+    const e = viewer.entities.add({
+      polygon: {
+        hierarchy: new Cesium.PolygonHierarchy(positions),
+        material: Cesium.Color.fromCssColorString('#ffb02e').withAlpha(0.35),
+        outline: true,
+        outlineColor: Cesium.Color.fromCssColorString('#ffb02e'),
+        height: 0
+      }
+    })
+    inundationEntities.push(e)
+  })
+}
+
+watch(() => props.track, drawTrack, { deep: true })
+watch(() => props.inundation, drawInundation, { deep: true })
+
+onMounted(() => {
+  // 不使用 Cesium Ion 默认服务，避免 token 验证失败
+  Cesium.Ion.defaultAccessToken = ''
+
+  viewer = new Cesium.Viewer(containerEl.value, {
+    animation: false,
+    baseLayer: false,
+    baseLayerPicker: false,
+    fullscreenButton: false,
+    geocoder: false,
+    homeButton: false,
+    infoBox: false,
+    sceneModePicker: false,
+    selectionIndicator: false,
+    timeline: false,
+    navigationHelpButton: false,
+    navigationInstructionsInitiallyVisible: false,
+    // 按需渲染：仅在场景变化时绘制，避免 60fps 持续渲染 + 瓦片请求导致页面持续 busy
+    requestRenderMode: true,
+    maximumRenderTimeChange: Infinity,
+    creditContainer: document.createElement('div')
+  })
+
+  // 手动添加高德卫星影像底图
+  viewer.imageryLayers.addImageryProvider(
+    new Cesium.UrlTemplateImageryProvider({
+      url: 'https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',
+      subdomains: ['1', '2', '3', '4'],
+      maximumLevel: 18
+    })
+  )
+
+  // 深色太空背景
+  viewer.scene.globe.enableLighting = false
+  viewer.scene.skyBox.show = false
+  viewer.scene.skyAtmosphere.show = true
+  viewer.scene.skyAtmosphere.hueShift = -0.5
+  viewer.scene.skyAtmosphere.saturationShift = -0.2
+  viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#060d1f')
+  viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#06112a')
+
+  // 初始相机
+  viewer.camera.setView({
+    destination: Cesium.Cartesian3.fromDegrees(
+      props.cameraView[0], props.cameraView[1], props.cameraView[2]
+    ),
+    orientation: {
+      heading: Cesium.Math.toRadians(0),
+      pitch: Cesium.Math.toRadians(-35),
+      roll: 0
+    }
+  })
+
+  drawHainan()
+  drawTrack()
+  drawInundation()
+  viewer.scene.requestRender()
+
+  // 容器尺寸变化（侧栏切换、窗口缩放）时主动同步 canvas 分辨率，
+  // 并在挂载后的下一帧强制重算一次，避免首帧取到 0 尺寸
+  viewer.resize()
+  requestAnimationFrame(() => viewer && viewer.resize())
+  resizeObserver = new ResizeObserver(() => {
+    if (viewer && !viewer.isDestroyed()) viewer.resize()
+  })
+  resizeObserver.observe(containerEl.value)
+})
+
+onBeforeUnmount(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
+  if (viewer) {
+    viewer.destroy()
+    viewer = null
+  }
+})
+</script>
+
+<style scoped>
+.cesium-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: #060d1f;
+}
+.cesium-container :deep(.cesium-viewer-bottom) {
+  display: none;
+}
+</style>

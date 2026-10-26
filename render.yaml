@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: hainan-rs-system
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeploy: true
