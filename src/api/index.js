@@ -1,11 +1,8 @@
-/**
- * 统一数据访问层
- * USE_MOCK = false → 走 FastAPI 后端（/api 前缀由 Vite proxy 转发到 127.0.0.1:8000）
- * 页面代码统一调用本层函数，后端地址变化只需改 vite.config.js proxy。
- */
+﻿/**
+ * 缁熶竴鏁版嵁璁块棶灞? * USE_MOCK = false 鈫?璧?FastAPI 鍚庣锛?api 鍓嶇紑鐢?Vite proxy 杞彂鍒?127.0.0.1:8000锛? * 椤甸潰浠ｇ爜缁熶竴璋冪敤鏈眰鍑芥暟锛屽悗绔湴鍧€鍙樺寲鍙渶鏀?vite.config.js proxy銆? */
 import * as mock from '@/mock'
 
-const USE_MOCK = false
+const USE_MOCK = true
 
 function resolve(data, delay = 120) {
   return new Promise((res) => setTimeout(() => res(data), delay))
@@ -18,7 +15,7 @@ function api(url) {
   })
 }
 
-// ─── 公共 ───
+// 鈹€鈹€鈹€ 鍏叡 鈹€鈹€鈹€
 export function fetchHainanOutline() {
   return USE_MOCK ? resolve(mock.hainanOutline) : api('/api/hainan-outline')
 }
@@ -43,16 +40,16 @@ export function fetchWaterGrade() {
   return USE_MOCK ? resolve(mock.waterGradeDist) : api('/api/water-grade')
 }
 
-// ─── 生态监测 ───
+// 鈹€鈹€鈹€ 鐢熸€佺洃娴?鈹€鈹€鈹€
 export function fetchChlaSeries(station) {
-  const data = { months: mock.months, values: mock.chlaSeries[station] || mock.chlaSeries['海口湾'] }
+  const data = { months: mock.months, values: mock.chlaSeries[station] || mock.chlaSeries['娴峰彛婀?] }
   return USE_MOCK
     ? resolve(data)
     : api(`/api/ecology/chla?station=${encodeURIComponent(station)}`)
 }
 
-export function fetchSstSeries(station = '海口湾') {
-  const data = { months: mock.months, values: mock.sstSeries[station] || mock.sstSeries['海口湾'] }
+export function fetchSstSeries(station = '娴峰彛婀?) {
+  const data = { months: mock.months, values: mock.sstSeries[station] || mock.sstSeries['娴峰彛婀?] }
   return USE_MOCK
     ? resolve(data)
     : api(`/api/ecology/sst?station=${encodeURIComponent(station)}`)
@@ -66,7 +63,7 @@ export function fetchMangroveArea() {
   return USE_MOCK ? resolve(mock.mangroveArea) : api('/api/ecology/mangrove')
 }
 
-// ─── 台风 ───
+// 鈹€鈹€鈹€ 鍙伴 鈹€鈹€鈹€
 export function fetchTyphoonList() {
   return USE_MOCK ? resolve(mock.typhoonList) : api('/api/typhoon/list')
 }
@@ -77,7 +74,7 @@ export function fetchTyphoonTrack(id) {
     : api(`/api/typhoon/track/${id}`)
 }
 
-// ─── 灾害评估 ───
+// 鈹€鈹€鈹€ 鐏惧璇勪及 鈹€鈹€鈹€
 export function fetchDamageSummary() {
   return USE_MOCK ? resolve(mock.damageSummary) : api('/api/damage/summary')
 }
@@ -98,7 +95,7 @@ export function fetchInundation() {
   return USE_MOCK ? resolve(mock.inundationPolygons) : api('/api/damage/inundation')
 }
 
-// ─── 卫星数据中心 ───
+// 鈹€鈹€鈹€ 鍗槦鏁版嵁涓績 鈹€鈹€鈹€
 export function fetchSatelliteCatalog() {
   return USE_MOCK ? resolve(mock.satelliteCatalog) : api('/api/satellite/catalog')
 }
