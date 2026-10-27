@@ -1,0 +1,12 @@
+# Netlify 配置
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+# API 路由重写：所有 /api/* 请求转发到 Netlify Functions
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
