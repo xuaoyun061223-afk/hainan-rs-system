@@ -25,16 +25,22 @@
       <div class="col col-map tech-panel">
         <div class="panel-title">
           海南岛近海生态与台风态势一张图
-          <span class="map-tip">● 监测站点　▲ 台风路径　◎ 登陆点风圈</span>
+          <span class="map-tip">● 监测站点　▲ 台风路径　点击右侧预警时间定位该时刻台风</span>
         </div>
-        <div class="map-container">
+        <div class="map-container" v-loading="trackLoading">
           <BaseMap
             :base-type="appStore.baseMapType"
             :stations="stations"
             :track="track"
+            :focus-time="focusTime"
             :show-wind-circle="true"
             :legend="mapLegend"
           />
+          <div v-if="focusLabel" class="map-focus">
+            <span class="focus-dot"></span>
+            <span class="focus-text">{{ focusLabel }}</span>
+            <el-button text size="small" class="focus-clear" @click="clearFocus">清除</el-button>
+          </div>
         </div>
       </div>
 
@@ -47,13 +53,22 @@
         <div class="tech-panel flex-panel alert-panel">
           <div class="panel-title">预警信息</div>
           <div class="alert-list">
-            <div v-for="(a, i) in alerts" :key="i" class="alert-item">
+            <div
+              v-for="(a, i) in alerts"
+              :key="i"
+              class="alert-item"
+              :class="{ active: focusIndex === i }"
+              @click="onAlertClick(a, i)"
+            >
               <el-tag :type="levelType(a.level)" size="small" effect="dark">{{ a.level }}</el-tag>
               <div class="alert-content">
                 <div class="alert-head">{{ a.type }} · {{ a.area }}</div>
                 <div class="alert-desc">{{ a.desc }}</div>
               </div>
-              <span class="alert-time">{{ a.time }}</span>
+              <span class="alert-time" :class="{ link: !!a.typhoonId }" :title="a.typhoonId ? '点击查看该时刻台风' : '该预警无关联台风'">
+                <span class="at-date">{{ datePart(a.time) }}</span>
+                <span class="at-clock">{{ clockPart(a.time) }}</span>
+              </span>
             </div>
           </div>
         </div>
@@ -64,21 +79,27 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { ElMessage } from 'element-plus'
 import BaseMap from '@/components/BaseMap.vue'
 import ChartBox from '@/components/ChartBox.vue'
 import StatCard from '@/components/StatCard.vue'
 import { useAppStore } from '@/stores/app'
 import {
-  fetchStations, fetchTyphoonTrack, fetchAlerts, fetchOverviewStats,
+  fetchStations, fetchTyphoonTrack, fetchTyphoonList, fetchAlerts, fetchOverviewStats,
   fetchWeeklyScenes, fetchWaterGrade
 } from '@/api'
-import { yagiTrack as mockTrack } from '@/mock'
 
 const appStore = useAppStore()
 
 const loading = ref(true)
 const stations = ref([])
+// 一张图默认不显示往常台风，只有点击预警时间后才加载该时刻的台风轨迹
 const track = ref([])
+const focusTime = ref('')
+const focusLabel = ref('')
+const focusIndex = ref(-1)
+const trackLoading = ref(false)
+const typhoonNames = ref({})
 const alerts = ref([])
 const stats = ref({ stationCount: 0, todayPasses: 0, activeTyphoon: 0, alertCount: 0 })
 const weekly = ref({ days: [], optical: [], sar: [] })
@@ -144,30 +165,112 @@ function levelType(level) {
   return { 红色: 'danger', 橙色: 'warning', 黄色: 'warning', 蓝色: 'info' }[level] || 'info'
 }
 
+function datePart(t) {
+  return (t || '').split(' ')[0] || ''
+}
+
+function clockPart(t) {
+  return (t || '').split(' ')[1] || ''
+}
+
+function clearFocus() {
+  track.value = []
+  focusTime.value = ''
+  focusLabel.value = ''
+  focusIndex.value = -1
+}
+
+/**
+ * 点击预警时间：按该预警时刻截取关联台风的轨迹，在地图上显示"这个时间的台风"。
+ * 轨迹点时间格式为 MM-DD HH:MM，补全预警年份后可直接按字符串比较先后；
+ * 轨迹点按天采样，因此对预警时刻前后两点做线性插值，得到该时刻的真实位置。
+ */
+async function onAlertClick(a, i) {
+  if (focusIndex.value === i) {
+    clearFocus()
+    return
+  }
+  if (!a.typhoonId) {
+    clearFocus()
+    ElMessage.info(`「${a.type}」属于生态类预警，没有关联的台风轨迹`)
+    return
+  }
+
+  trackLoading.value = true
+  try {
+    const full = await fetchTyphoonTrack(a.typhoonId)
+    const year = (a.time || '').slice(0, 4) || '2024'
+    const pts = full.map((p) => ({ ...p, dt: `${year}-${p.t}` }))
+    const before = pts.filter((p) => p.dt <= a.time)
+    const after = pts.filter((p) => p.dt > a.time)
+
+    const shown = (before.length ? before : pts.slice(0, 1)).slice()
+
+    // 预警时刻落在两个采样点之间时，插值出该时刻的台风位置
+    if (before.length && after.length) {
+      const prev = before[before.length - 1]
+      const next = after[0]
+      const t1 = Date.parse(prev.dt.replace(' ', 'T'))
+      const t2 = Date.parse(next.dt.replace(' ', 'T'))
+      const tt = Date.parse(a.time.replace(' ', 'T'))
+      const k = t2 > t1 ? (tt - t1) / (t2 - t1) : 0
+      if (k > 0.001) {
+        const lerp = (x, y) => +(x + (y - x) * k).toFixed(2)
+        shown.push({
+          t: a.time.slice(5),
+          dt: a.time,
+          lon: lerp(prev.lon, next.lon),
+          lat: lerp(prev.lat, next.lat),
+          grade: prev.grade,
+          wind: Math.round(prev.wind + (next.wind - prev.wind) * k),
+          pressure: Math.round(prev.pressure + (next.pressure - prev.pressure) * k),
+          radius: Math.round(prev.radius + (next.radius - prev.radius) * k),
+          interpolated: true
+        })
+      }
+    }
+
+    track.value = shown
+    focusTime.value = a.time
+    focusIndex.value = i
+
+    const last = shown[shown.length - 1]
+    const name = typhoonNames.value[a.typhoonId] || a.typhoonId
+    focusLabel.value = `${a.time} 台风「${name}」${last.grade}｜${last.wind} m/s`
+  } catch (e) {
+    console.error('台风轨迹加载失败', e)
+    ElMessage.error('台风轨迹加载失败，请稍后重试')
+    clearFocus()
+  } finally {
+    trackLoading.value = false
+  }
+}
+
 onMounted(async () => {
   try {
-    const [s, t, a, o, w, g] = await Promise.all([
+    const [s, a, o, w, g, list] = await Promise.all([
       fetchStations(),
-      fetchTyphoonTrack('2411'),
       fetchAlerts(),
       fetchOverviewStats(),
       fetchWeeklyScenes(),
-      fetchWaterGrade()
+      fetchWaterGrade(),
+      fetchTyphoonList()
     ])
     stations.value = s
-    track.value = t
     alerts.value = a
     stats.value = o
     weekly.value = w
     waterGrade.value = g
+    typhoonNames.value = Object.fromEntries(list.map((t) => [t.id, t.name]))
   } catch (e) {
     console.error('Dashboard 数据加载失败，使用降级数据', e)
-    stations.value = (await import('@/mock')).stations
-    track.value = mockTrack
-    alerts.value = (await import('@/mock')).alerts
-    stats.value = (await import('@/mock')).overviewStats
-    weekly.value = (await import('@/mock')).weeklyScenes
-    waterGrade.value = (await import('@/mock')).waterGradeDist
+    const mock = await import('@/mock')
+    stations.value = mock.stations
+    alerts.value = mock.alerts
+    stats.value = mock.overviewStats
+    weekly.value = mock.weeklyScenes
+    waterGrade.value = mock.waterGradeDist
+    typhoonNames.value = Object.fromEntries(mock.typhoonList.map((t) => [t.id, t.name]))
   } finally {
     loading.value = false
   }
@@ -213,6 +316,41 @@ onMounted(async () => {
 .map-container {
   flex: 1;
   min-height: 0;
+  position: relative;
+}
+.map-focus {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  z-index: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 20px);
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(6, 18, 42, 0.88);
+  border: 1px solid rgba(0, 229, 255, 0.45);
+  font-size: 11px;
+  color: #d6e8ff;
+}
+.focus-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #00e5ff;
+  box-shadow: 0 0 6px #00e5ff;
+  flex: none;
+}
+.focus-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.focus-clear {
+  flex: none;
+  color: #8aa6c8;
+  padding: 0 2px;
 }
 .map-tip {
   margin-left: auto;
@@ -234,9 +372,20 @@ onMounted(async () => {
   gap: 8px;
   padding: 8px 4px;
   border-bottom: 1px dashed rgba(64, 158, 255, 0.15);
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+.alert-item:hover {
+  background: rgba(64, 158, 255, 0.08);
+}
+.alert-item.active {
+  background: rgba(0, 229, 255, 0.1);
+  border-left-color: #00e5ff;
 }
 .alert-content {
   flex: 1;
+  min-width: 0;
 }
 .alert-head {
   font-size: 13px;
@@ -248,8 +397,29 @@ onMounted(async () => {
   margin-top: 2px;
 }
 .alert-time {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex: none;
+  line-height: 1.35;
+}
+.at-date {
   font-size: 10px;
-  color: #4d678a;
+  color: #8aa6c8;
   white-space: nowrap;
+}
+.at-clock {
+  font-size: 11px;
+  color: #d6e8ff;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.alert-time.link .at-clock {
+  color: #00e5ff;
+  text-decoration: underline dotted;
+}
+.alert-item.active .at-clock {
+  color: #00e5ff;
+  font-weight: 600;
 }
 </style>

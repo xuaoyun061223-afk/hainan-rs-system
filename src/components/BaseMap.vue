@@ -20,6 +20,7 @@ const props = defineProps({
   track: { type: Array, default: () => [] },
   inundation: { type: Array, default: () => [] },
   showWindCircle: { type: Boolean, default: false },
+  focusTime: { type: String, default: '' },
   legend: { type: Array, default: () => [] }
 })
 
@@ -118,9 +119,27 @@ function drawTrack() {
     }
   })
 
+  // 聚焦某条预警时间时，高亮该时刻台风所在位置
+  if (props.focusTime) {
+    const last = props.track[props.track.length - 1]
+    L.circleMarker([last.lat, last.lon], {
+      radius: 12,
+      color: '#00e5ff',
+      weight: 2,
+      fillColor: '#00e5ff',
+      fillOpacity: 0.22
+    })
+      .bindTooltip(`预警时刻位置 · ${props.focusTime}<br/>${last.t}｜${last.grade}｜${last.wind} m/s`, {
+        permanent: false
+      })
+      .addTo(dataLayer)
+  }
+
   // 登陆点七级风圈
   if (props.showWindCircle) {
-    const landfall = props.track.find((p) => p.grade.includes('登陆')) || props.track[0]
+    const landfall = props.focusTime
+      ? props.track[props.track.length - 1]
+      : props.track.find((p) => p.grade.includes('登陆')) || props.track[0]
     L.circle([landfall.lat, landfall.lon], {
       radius: landfall.radius * 1000,
       color: '#ff5c5c',
@@ -157,10 +176,21 @@ function redraw() {
 }
 
 watch(
-  () => [props.stations, props.track, props.inundation, props.showWindCircle],
+  () => [props.stations, props.track, props.inundation, props.showWindCircle, props.focusTime],
   redraw,
   { deep: true }
 )
+
+// 点击预警时间后，自动把视野调整到该时刻台风与海南岛都能看清的范围
+watch(() => props.focusTime, (t) => {
+  if (!map) return
+  if (t && props.track.length) {
+    const bounds = L.latLngBounds(props.track.map((p) => [p.lat, p.lon]))
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 6 })
+  } else if (!t) {
+    map.setView([19.35, 109.85], 8)
+  }
+})
 
 watch(() => props.baseType, (type) => {
   if (type === 'satellite') {
@@ -177,7 +207,7 @@ onMounted(() => {
     center: [19.35, 109.85],
     zoom: 8,
     minZoom: 6,
-    maxBounds: [[15.5, 105.0], [23.0, 113.5]],
+    maxBounds: [[8.0, 100.0], [30.0, 132.0]],
     zoomControl: true,
     attributionControl: false
   })
