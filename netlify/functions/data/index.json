@@ -1,46 +1,46 @@
 {
-    "generatedAt":  "2026-10-27T09:14:49.7554568+08:00",
-    "source":  "http://127.0.0.1:8125",
-    "routes":  {
-                   "/api/hainan-outline":  "hainan-outline.json",
-                   "/api/stations":  "stations.json",
-                   "/api/alerts":  "alerts.json",
-                   "/api/overview":  "overview.json",
-                   "/api/weekly-scenes":  "weekly-scenes.json",
-                   "/api/water-grade":  "water-grade.json",
-                   "/api/ecology/shoreline":  "ecology-shoreline.json",
-                   "/api/ecology/mangrove":  "ecology-mangrove.json",
-                   "/api/typhoon/list":  "typhoon-list.json",
-                   "/api/damage/summary":  "damage-summary.json",
-                   "/api/damage/building":  "damage-building.json",
-                   "/api/damage/ndvi":  "damage-ndvi.json",
-                   "/api/damage/city":  "damage-city.json",
-                   "/api/damage/inundation":  "damage-inundation.json",
-                   "/api/satellite/catalog":  "satellite-catalog.json"
-               },
-    "stationSeries":  {
-                          "chla":  {
-                                       "海口湾":  "chla-S01.json",
-                                       "清澜湾":  "chla-S02.json",
-                                       "博鳌近岸":  "chla-S03.json",
-                                       "三亚湾":  "chla-S04.json",
-                                       "洋浦湾":  "chla-S05.json",
-                                       "八所近岸":  "chla-S06.json"
-                                   },
-                          "sst":  {
-                                      "海口湾":  "sst-S01.json",
-                                      "清澜湾":  "sst-S02.json",
-                                      "博鳌近岸":  "sst-S03.json",
-                                      "三亚湾":  "sst-S04.json",
-                                      "洋浦湾":  "sst-S05.json",
-                                      "八所近岸":  "sst-S06.json"
-                                  }
-                      },
-    "typhoonTracks":  {
-                          "2411":  "track-2411.json",
-                          "2118":  "track-2118.json",
-                          "2220":  "track-2220.json",
-                          "2017":  "track-2017.json",
-                          "1409":  "track-1409.json"
-                      }
+  "generatedAt": "2026-10-27T09:35:09.755646+08:00",
+  "source": "backend/database.py（本地 FastAPI 后端真实响应）",
+  "routes": {
+    "/api/hainan-outline": "hainan-outline.json",
+    "/api/stations": "stations.json",
+    "/api/alerts": "alerts.json",
+    "/api/overview": "overview.json",
+    "/api/weekly-scenes": "weekly-scenes.json",
+    "/api/water-grade": "water-grade.json",
+    "/api/ecology/shoreline": "ecology-shoreline.json",
+    "/api/ecology/mangrove": "ecology-mangrove.json",
+    "/api/typhoon/list": "typhoon-list.json",
+    "/api/damage/summary": "damage-summary.json",
+    "/api/damage/building": "damage-building.json",
+    "/api/damage/ndvi": "damage-ndvi.json",
+    "/api/damage/city": "damage-city.json",
+    "/api/damage/inundation": "damage-inundation.json",
+    "/api/satellite/catalog": "satellite-catalog.json"
+  },
+  "stationSeries": {
+    "chla": {
+      "海口湾": "chla-S01.json",
+      "清澜湾": "chla-S02.json",
+      "博鳌近岸": "chla-S03.json",
+      "三亚湾": "chla-S04.json",
+      "洋浦湾": "chla-S05.json",
+      "八所近岸": "chla-S06.json"
+    },
+    "sst": {
+      "海口湾": "sst-S01.json",
+      "清澜湾": "sst-S02.json",
+      "博鳌近岸": "sst-S03.json",
+      "三亚湾": "sst-S04.json",
+      "洋浦湾": "sst-S05.json",
+      "八所近岸": "sst-S06.json"
+    }
+  },
+  "typhoonTracks": {
+    "2411": "track-2411.json",
+    "2118": "track-2118.json",
+    "2220": "track-2220.json",
+    "2017": "track-2017.json",
+    "1409": "track-1409.json"
+  }
 }

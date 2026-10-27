@@ -1,1 +1,22 @@
-[{"name":"无损坏","value":386500,"color":"#2ee6a6"},{"name":"轻微损坏","value":92400,"color":"#ffd666"},{"name":"严重损坏","value":21300,"color":"#ff9c40"},{"name":"完全摧毁","value":5860,"color":"#ff5c5c"}]
+[
+  {
+    "name": "无损坏",
+    "value": 386500,
+    "color": "#2ee6a6"
+  },
+  {
+    "name": "轻微损坏",
+    "value": 92400,
+    "color": "#ffd666"
+  },
+  {
+    "name": "严重损坏",
+    "value": 21300,
+    "color": "#ff9c40"
+  },
+  {
+    "name": "完全摧毁",
+    "value": 5860,
+    "color": "#ff5c5c"
+  }
+]

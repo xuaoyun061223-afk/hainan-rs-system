@@ -1,1 +1,34 @@
-[{"segment":"海口湾","rate":-0.8},{"segment":"铺前湾","rate":-1.5},{"segment":"清澜湾","rate":0.6},{"segment":"博鳌岸段","rate":-0.4},{"segment":"三亚湾","rate":-0.6},{"segment":"莺歌海","rate":2.1},{"segment":"八所岸段","rate":-1.2},{"segment":"洋浦湾","rate":0.9}]
+[
+  {
+    "segment": "海口湾",
+    "rate": -0.8
+  },
+  {
+    "segment": "铺前湾",
+    "rate": -1.5
+  },
+  {
+    "segment": "清澜湾",
+    "rate": 0.6
+  },
+  {
+    "segment": "博鳌岸段",
+    "rate": -0.4
+  },
+  {
+    "segment": "三亚湾",
+    "rate": -0.6
+  },
+  {
+    "segment": "莺歌海",
+    "rate": 2.1
+  },
+  {
+    "segment": "八所岸段",
+    "rate": -1.2
+  },
+  {
+    "segment": "洋浦湾",
+    "rate": 0.9
+  }
+]
