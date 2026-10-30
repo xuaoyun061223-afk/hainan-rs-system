@@ -85,11 +85,12 @@ async function loadLiveContext() {
     getSeaTemperature(),
   ])
   const list = Array.isArray(typhoons) ? typhoons : []
-  // 与 mapTyphoonList 的取数规则保持一致：活跃台风优先 + 最近 5 条，共 6 条
+  // 与本地后端 _live_rows() 的取数规则保持一致：活跃台风优先 + 最近 8 条（最多 9 条详情），
+  // 这样灾害评估下拉框中的「现有台风」与本地一致，不会因缺详情被过滤
   const picked = [
     ...list.filter((t) => t.isactive),
-    ...list.slice(-5),
-  ].slice(0, 6)
+    ...list.slice(-8),
+  ].slice(0, 9)
   const ids = [...new Set(picked.map((t) => t.tfid))]
   const details = {}
   await Promise.all(
