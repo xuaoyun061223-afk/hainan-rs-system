@@ -177,9 +177,19 @@ export const overviewStats = {
   coverage: 100
 }
 
-// 近 7 日卫星接入量
+// 近 7 日卫星接入量（日期跟随当天滚动，避免降级时显示历史日期）
+function recentDays(count = 7) {
+  const now = new Date(Date.now() + 8 * 3600 * 1000)
+  const out = []
+  for (let i = count - 1; i >= 0; i--) {
+    const d = new Date(now.getTime() - i * 86400000)
+    out.push(`${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`)
+  }
+  return out
+}
+
 export const weeklyScenes = {
-  days: ['09-10', '09-11', '09-12', '09-13', '09-14', '09-15', '09-16'],
+  days: recentDays(7),
   optical: [126, 98, 142, 110, 134, 156, 88],
   sar: [24, 32, 18, 36, 28, 42, 26]
 }

@@ -144,7 +144,8 @@ const ndviOption = computed(() => ({
       data: ndviData.value.after, lineStyle: { width: 2.5, color: '#ff7a45' }, itemStyle: { color: '#ff7a45' },
       markLine: {
         symbol: 'none', lineStyle: { color: '#ff5c5c', type: 'dashed' },
-        label: { color: '#ff9c9c', formatter: '9月6日 摩羯登陆' },
+        // 标注放在虚线底部，避免与顶部图例文字叠在一起
+        label: { color: '#ff9c9c', position: 'insideEndBottom', formatter: '9月6日' },
         data: [{ xAxis: '09-06' }]
       }
     }
