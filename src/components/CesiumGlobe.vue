@@ -268,7 +268,7 @@ onMounted(() => {
   ctrl.inertiaTranslate = 0.06
   ctrl.inertiaZoom = 0.15
   ctrl.enableLook = false        // 禁用自由视角，避免镜头被拖歪、出现倾斜地平线
-  ctrl.enableTilt = false        // 锁定俯仰，只能平移与缩放
+  ctrl.enableTilt = false        // 关闭 Shift/Ctrl 拖拽的倾斜手势
   ctrl.enableCollisionDetection = true   // 防止镜头穿到地平面以下
   ctrl.minimumZoomDistance = 2000        // 最近 2 km
   ctrl.maximumZoomDistance = 12000000    // 最远约 1.2 万 km，避免缩到看不清海南岛
@@ -278,6 +278,23 @@ onMounted(() => {
     Cesium.CameraEventType.WHEEL,
     Cesium.CameraEventType.PINCH
   ]
+
+  // ---- 旋转灵敏度（唯一需要调的常量）----
+  // Cesium 三维旋转速率 = (相机到地心距离 - 地球半径) / 地球半径，由相机高度决定，
+  // 没有公开参数可以缩放；而且控制器每帧都会在 update() 里把它重置回去。
+  // 因此在每帧 update 之后按 ROTATE_SENSITIVITY 缩放旋转速率，
+  // 相当于"拖动同样的距离，地球只转默认的这么多"：
+  //   1.0 = Cesium 默认手感；0.4 = 只有默认的四成；0.2 = 很稳，适合远距离定位。
+  const ROTATE_SENSITIVITY = 0.4
+  const earthRadius = viewer.scene.ellipsoid.maximumRadius
+  const baseUpdate = ctrl.update.bind(ctrl)
+  ctrl.update = () => {
+    baseUpdate()
+    ctrl._rotateFactor = ROTATE_SENSITIVITY / earthRadius
+    ctrl._rotateRateRangeAdjustment = earthRadius
+  }
+  // 快速甩动时，单次位移最多按画布宽度的 8% 计算，避免一下转过大半圈
+  ctrl.maximumMovementRatio = 0.08
 
   viewer.scene.requestRender()
 
