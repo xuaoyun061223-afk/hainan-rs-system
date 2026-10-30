@@ -6,8 +6,8 @@
     "date": "2024-09-06",
     "landfall": "海南文昌",
     "grade": "超强台风",
-    "wind": 62,
-    "pressure": 958,
+    "wind": 60,
+    "pressure": 961,
     "status": "历史"
   },
   {
@@ -17,8 +17,8 @@
     "date": "2021-10-13",
     "landfall": "海南琼海",
     "grade": "台风",
-    "wind": 33,
-    "pressure": 975,
+    "wind": 32,
+    "pressure": 1007,
     "status": "历史"
   },
   {
@@ -28,8 +28,8 @@
     "date": "2022-10-18",
     "landfall": "广东湛江（严重影响海南）",
     "grade": "强台风",
-    "wind": 40,
-    "pressure": 965,
+    "wind": 39,
+    "pressure": 958,
     "status": "历史"
   },
   {
@@ -39,8 +39,8 @@
     "date": "2020-10-24",
     "landfall": "海南近海",
     "grade": "强热带风暴",
-    "wind": 28,
-    "pressure": 980,
+    "wind": 29,
+    "pressure": 968,
     "status": "历史"
   },
   {
@@ -50,8 +50,8 @@
     "date": "2014-07-18",
     "landfall": "海南文昌",
     "grade": "超强台风",
-    "wind": 60,
-    "pressure": 910,
+    "wind": 58,
+    "pressure": 926,
     "status": "历史"
   }
 ]

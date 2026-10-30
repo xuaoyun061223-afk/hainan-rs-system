@@ -23,6 +23,17 @@
               <span class="opt-grade">{{ t.grade }}</span>
             </el-option>
           </el-option-group>
+          <el-option-group v-if="yearTargets.length" label="本年度台风（最近观测）">
+            <el-option
+              v-for="t in yearTargets"
+              :key="t.id"
+              :value="t.id"
+              :label="`${t.id} ${t.name}`"
+            >
+              <span class="opt-name">{{ t.id }} {{ t.name }}</span>
+              <span class="opt-grade">{{ t.date }}</span>
+            </el-option>
+          </el-option-group>
           <el-option-group label="历史台风">
             <el-option
               v-for="t in historyTargets"
@@ -158,7 +169,8 @@ const EMPTY = {
 const assessment = ref({ ...EMPTY })
 
 const liveTargets = computed(() => targets.value.filter((t) => t.source === '实时台风'))
-const historyTargets = computed(() => targets.value.filter((t) => t.source !== '实时台风'))
+const yearTargets = computed(() => targets.value.filter((t) => t.source === '本年度台风'))
+const historyTargets = computed(() => targets.value.filter((t) => t.source === '历史台风'))
 
 const damagedBuildings = computed(
   () => (assessment.value.building.minor || 0) + (assessment.value.building.major || 0) + (assessment.value.building.destroyed || 0)

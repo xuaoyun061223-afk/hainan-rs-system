@@ -1,50 +1,50 @@
 [
   {
     "city": "文昌",
-    "inundation": 86.4,
-    "buildings": 41200,
-    "vegetation": 486.2
+    "inundation": 83.4,
+    "buildings": 42583,
+    "vegetation": 494.0
   },
   {
     "city": "海口",
-    "inundation": 62.8,
-    "buildings": 36800,
-    "vegetation": 268.5
+    "inundation": 62.3,
+    "buildings": 37513,
+    "vegetation": 271.0
   },
   {
     "city": "澄迈",
-    "inundation": 41.5,
-    "buildings": 15600,
-    "vegetation": 214.3
+    "inundation": 42.5,
+    "buildings": 15458,
+    "vegetation": 216.3
   },
   {
     "city": "临高",
-    "inundation": 35.2,
-    "buildings": 11200,
-    "vegetation": 186.7
+    "inundation": 36.1,
+    "buildings": 11257,
+    "vegetation": 187.9
   },
   {
     "city": "琼海",
-    "inundation": 28.6,
-    "buildings": 8600,
-    "vegetation": 172.5
+    "inundation": 28.4,
+    "buildings": 8929,
+    "vegetation": 178.7
   },
   {
     "city": "儋州",
-    "inundation": 24.1,
-    "buildings": 7900,
-    "vegetation": 158.9
+    "inundation": 23.9,
+    "buildings": 7839,
+    "vegetation": 156.5
   },
   {
     "city": "定安",
-    "inundation": 14.8,
-    "buildings": 3200,
-    "vegetation": 142.1
+    "inundation": 15.2,
+    "buildings": 3154,
+    "vegetation": 143.9
   },
   {
     "city": "其他",
     "inundation": 19.4,
-    "buildings": 13860,
-    "vegetation": 233.2
+    "buildings": 14028,
+    "vegetation": 229.6
   }
 ]

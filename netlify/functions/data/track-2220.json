@@ -5,17 +5,17 @@
     "lat": 14.5,
     "grade": "热带风暴",
     "wind": 22,
-    "pressure": 992,
-    "radius": 110
+    "pressure": 969,
+    "radius": 113
   },
   {
     "t": "10-16 08:00",
     "lon": 125.2,
     "lat": 16.3,
     "grade": "强热带风暴",
-    "wind": 30,
-    "pressure": 980,
-    "radius": 140
+    "wind": 29,
+    "pressure": 943,
+    "radius": 145
   },
   {
     "t": "10-17 08:00",
@@ -23,7 +23,7 @@
     "lat": 18.5,
     "grade": "台风",
     "wind": 40,
-    "pressure": 965,
+    "pressure": 956,
     "radius": 190
   },
   {
@@ -32,8 +32,8 @@
     "lat": 20.8,
     "grade": "强台风",
     "wind": 45,
-    "pressure": 960,
-    "radius": 210
+    "pressure": 946,
+    "radius": 209
   },
   {
     "t": "10-19 08:00",
@@ -41,7 +41,7 @@
     "lat": 22.2,
     "grade": "台风",
     "wind": 35,
-    "pressure": 972,
-    "radius": 170
+    "pressure": 953,
+    "radius": 165
   }
 ]

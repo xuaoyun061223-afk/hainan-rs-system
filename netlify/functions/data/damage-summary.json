@@ -1,15 +1,15 @@
 {
   "event": "2411 台风\"摩羯\"",
   "affectedCities": 16,
-  "affectedPopulation": 283.6,
-  "economicLoss": 285.6,
-  "inundationArea": 312.8,
+  "affectedPopulation": 282.3,
+  "economicLoss": 286.1,
+  "inundationArea": 324.4,
   "building": {
-    "none": 386500,
-    "minor": 92400,
-    "major": 21300,
-    "destroyed": 5860
+    "none": 373709,
+    "minor": 91625,
+    "major": 20535,
+    "destroyed": 5850
   },
-  "vegetationDamage": 1862.4,
-  "powerOutage": 86.5
+  "vegetationDamage": 1913.1,
+  "powerOutage": 86.3
 }

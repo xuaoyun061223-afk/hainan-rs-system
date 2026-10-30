@@ -57,6 +57,26 @@ function readDaily(name) {
   return applyDailyVariance(data, nowCN().dateKey, name)
 }
 
+/** 本年度实时台风快照（sync_data.py 生成；线上实时源不可达时作为「现有台风」兜底） */
+function readLiveSnapshot() {
+  const data = readFile('typhoon-live.json')
+  const items = Array.isArray(data) ? data : (data && data.items) || []
+  return items.map((t) => ({ ...t, source: '本年度台风' }))
+}
+
+/** 历史台风快照（数据库 TYPHOON_LIST） */
+function readHistoryList() {
+  return readFile(routeIndex.routes['/api/typhoon/history']) || readFile(routeIndex.routes['/api/typhoon/list']) || []
+}
+
+/** 实时台风行：优先实时接口，失败时回退到本年度快照 */
+async function liveTargetRows(ctx, limit = 8) {
+  const live = ctx.typhoons.length
+    ? mapTyphoonList(ctx.typhoons, ctx.details, limit).map((t) => ({ ...t, source: '实时台风' }))
+    : []
+  return live.length ? live : readLiveSnapshot().slice(0, limit)
+}
+
 /** 为实时台风的编号批量获取详情（限制数量，避免一次请求打过多外部接口） */
 async function loadLiveContext() {
   const [typhoons, weather, sea] = await Promise.all([
@@ -123,11 +143,16 @@ export const handler = async (event) => {
     return jsonResponse(200, readDaily(routeIndex.routes['/api/alerts']))
   }
 
-  // 台风列表：优先返回本年度实时台风（活跃优先），失败时回退到历史快照
+  // 台风列表：优先返回本年度实时台风（活跃优先），实时源不可达时回退到本年度快照，
+  // 再退一步用历史快照，保证「台风监测预警」始终有数据
   if (path === '/typhoon/list') {
     const ctx = await loadLiveContext()
     if (ctx.typhoons.length) {
       return jsonResponse(200, mapTyphoonList(ctx.typhoons, ctx.details))
+    }
+    const snapshot = readLiveSnapshot()
+    if (snapshot.length) {
+      return jsonResponse(200, snapshot.map(({ source, ...t }) => t))
     }
     return jsonResponse(200, readDaily(routeIndex.routes['/api/typhoon/list']))
   }
@@ -200,13 +225,11 @@ export const handler = async (event) => {
     if (data) return jsonResponse(200, extendMangrove(data))
   }
 
-  // 灾害评估对象：实时台风（活跃优先）+ 历史台风，供前端下拉选择
+  // 灾害评估对象：现有台风（实时优先 / 本年度快照兜底）+ 历史台风，供前端分组下拉选择
   if (path === '/damage/targets') {
     const ctx = await loadLiveContext()
-    const live = ctx.typhoons.length
-      ? mapTyphoonList(ctx.typhoons, ctx.details, 8).map((t) => ({ ...t, source: '实时台风' }))
-      : []
-    const history = (readFile(routeIndex.routes['/api/typhoon/list']) || []).map((t) => ({
+    const live = await liveTargetRows(ctx)
+    const history = readHistoryList().map((t) => ({
       ...t,
       active: false,
       live: false,
@@ -216,14 +239,13 @@ export const handler = async (event) => {
     return jsonResponse(200, [...live, ...history.filter((t) => !seen.has(t.id))])
   }
 
-  // 单个台风的灾害快速评估：历史与实时台风同一套模型，默认评估 2411「摩羯」
+  // 单个台风的灾害快速评估：历史与现有台风同一套模型，默认评估 2411「摩羯」
   const assessMatch = path.match(/^\/damage\/assessment(?:\/([^/]+))?$/)
   if (assessMatch) {
     const id = decodeURIComponent(assessMatch[1] || '2411')
-    const history = readFile(routeIndex.routes['/api/typhoon/list']) || []
     const ctx = await loadLiveContext()
-    const liveRows = ctx.typhoons.length ? mapTyphoonList(ctx.typhoons, ctx.details, 8) : []
-    const row = history.find((t) => t.id === id) || liveRows.find((t) => t.id === id)
+    const liveRows = await liveTargetRows(ctx)
+    const row = readHistoryList().find((t) => t.id === id) || liveRows.find((t) => t.id === id)
     if (!row) return jsonResponse(404, { error: 'Not Found', id })
 
     const trackFile = routeIndex.typhoonTracks[id]

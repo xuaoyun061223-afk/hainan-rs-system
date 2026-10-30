@@ -45,7 +45,9 @@ BASE_ENDPOINTS = [
     ("/api/water-grade", "water-grade.json"),
     ("/api/ecology/shoreline", "ecology-shoreline.json"),
     ("/api/ecology/mangrove", "ecology-mangrove.json"),
-    ("/api/typhoon/list", "typhoon-list.json"),
+    # 台风列表拆成两份快照：history（数据库历史台风）+ live（本年度实时台风），
+    # 线上实时源不可达时仍能展示「历史 / 现有台风」两组评估对象，见 sync_typhoons()。
+    ("/api/typhoon/history", "typhoon-history.json"),
     ("/api/damage/summary", "damage-summary.json"),
     ("/api/damage/building", "damage-building.json"),
     ("/api/damage/ndvi", "damage-ndvi.json"),
@@ -175,6 +177,48 @@ def git_add_with_retry(paths):
     return result.returncode == 0
 
 
+def sync_typhoons(base_url, written):
+    """采集历史台风 + 本年度实时台风（含轨迹），返回 (history, live, tracks)。
+
+    线上 Netlify Functions 运行在境外机房，浙江水利厅台风接口常因网络原因超时，
+    因此这里把本年度实时台风与轨迹一起写进快照：线上优先用实时接口，
+    取不到时自动回退到本快照，「现有台风」分组仍然可用。
+    """
+    history = fetch_json(base_url, "/api/typhoon/history")
+    if write_json(DATA_DIR / "typhoon-history.json", history):
+        written.append("typhoon-history.json")
+
+    # /api/damage/targets 已合并「实时台风 + 历史台风」，这里只取实时部分
+    targets = fetch_json(base_url, "/api/damage/targets")
+    live = [t for t in targets if t.get("source") == "实时台风"]
+    year = (live[0].get("date") or "")[:4] or datetime.now().strftime("%Y")
+    payload = {
+        "generatedAt": datetime.now().astimezone().isoformat(),
+        "year": year,
+        "items": live,
+    }
+    if write_json(DATA_DIR / "typhoon-live.json", payload):
+        written.append("typhoon-live.json")
+
+    tracks = {}
+    rows = list(history) + live
+    print(f"采集 {len(rows)} 条台风轨迹（历史 {len(history)} + 实时 {len(live)}）…")
+    for ty in rows:
+        tid = ty.get("id")
+        if not tid or str(tid) in tracks:
+            continue
+        try:
+            data = fetch_json(base_url, f"/api/typhoon/track/{urllib.parse.quote(str(tid))}")
+        except Exception as e:
+            print(f"  跳过轨迹 {tid}：{e}")
+            continue
+        filename = f"track-{tid}.json"
+        if write_json(DATA_DIR / filename, data):
+            written.append(filename)
+        tracks[str(tid)] = filename
+    return history, live, tracks
+
+
 def main():
     parser = argparse.ArgumentParser(description="同步后端真实数据到 Netlify 并推送上线")
     parser.add_argument("--no-push", action="store_true", help="只生成数据文件，不提交推送")
@@ -231,19 +275,8 @@ def main():
                     written.append(filename)
                 station_series[kind][name] = filename
 
-        # 3. 台风轨迹
-        typhoons = fetch_json(base_url, "/api/typhoon/list")
-        tracks = {}
-        print(f"采集 {len(typhoons)} 条台风轨迹…")
-        for ty in typhoons:
-            tid = ty.get("id")
-            if not tid:
-                continue
-            data = fetch_json(base_url, f"/api/typhoon/track/{urllib.parse.quote(str(tid))}")
-            filename = f"track-{tid}.json"
-            if write_json(DATA_DIR / filename, data):
-                written.append(filename)
-            tracks[str(tid)] = filename
+        # 3. 台风：历史台风 + 本年度实时台风（含各自轨迹）
+        history, live, tracks = sync_typhoons(base_url, written)
 
         # 4. 索引
         index = {
@@ -253,6 +286,8 @@ def main():
             "stationSeries": station_series,
             "typhoonTracks": tracks,
         }
+        # 兼容旧代码：/api/typhoon/list 的兜底快照仍然指历史台风
+        index["routes"]["/api/typhoon/list"] = "typhoon-history.json"
         if write_json(DATA_DIR / "index.json", index):
             written.append("index.json")
 

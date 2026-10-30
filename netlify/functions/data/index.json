@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-27T20:47:53.641081+08:00",
+  "generatedAt": "2026-10-30T11:08:31.708690+08:00",
   "source": "backend/database.py（本地 FastAPI 后端真实响应）",
   "routes": {
     "/api/hainan-outline": "hainan-outline.json",
@@ -10,13 +10,14 @@
     "/api/water-grade": "water-grade.json",
     "/api/ecology/shoreline": "ecology-shoreline.json",
     "/api/ecology/mangrove": "ecology-mangrove.json",
-    "/api/typhoon/list": "typhoon-list.json",
+    "/api/typhoon/history": "typhoon-history.json",
     "/api/damage/summary": "damage-summary.json",
     "/api/damage/building": "damage-building.json",
     "/api/damage/ndvi": "damage-ndvi.json",
     "/api/damage/city": "damage-city.json",
     "/api/damage/inundation": "damage-inundation.json",
-    "/api/satellite/catalog": "satellite-catalog.json"
+    "/api/satellite/catalog": "satellite-catalog.json",
+    "/api/typhoon/list": "typhoon-history.json"
   },
   "stationSeries": {
     "chla": {
@@ -41,6 +42,14 @@
     "2118": "track-2118.json",
     "2220": "track-2220.json",
     "2017": "track-2017.json",
-    "1409": "track-1409.json"
+    "1409": "track-1409.json",
+    "202631": "track-202631.json",
+    "202624": "track-202624.json",
+    "202625": "track-202625.json",
+    "202626": "track-202626.json",
+    "202627": "track-202627.json",
+    "202628": "track-202628.json",
+    "202629": "track-202629.json",
+    "202630": "track-202630.json"
   }
 }

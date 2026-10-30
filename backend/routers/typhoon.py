@@ -24,6 +24,14 @@ def get_typhoon_list():
     )
 
 
+@router.get("/history")
+def get_typhoon_history():
+    """历史台风快照（用于线上「历史台风」分组与实时源不可用时的兜底）"""
+    return live_data.apply_daily_variance(
+        TYPHOON_LIST, live_data.now_cn()["date_key"], "typhoon-history"
+    )
+
+
 @router.get("/track/{typhoon_id}")
 def get_typhoon_track(typhoon_id: str):
     if typhoon_id in TYPHOON_TRACKS:

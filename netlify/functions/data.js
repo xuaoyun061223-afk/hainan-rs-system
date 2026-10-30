@@ -30,10 +30,19 @@ import sstS06 from './data/sst-S06.json' with { type: 'json' }
 import stations from './data/stations.json' with { type: 'json' }
 import track1409 from './data/track-1409.json' with { type: 'json' }
 import track2017 from './data/track-2017.json' with { type: 'json' }
+import track202624 from './data/track-202624.json' with { type: 'json' }
+import track202625 from './data/track-202625.json' with { type: 'json' }
+import track202626 from './data/track-202626.json' with { type: 'json' }
+import track202627 from './data/track-202627.json' with { type: 'json' }
+import track202628 from './data/track-202628.json' with { type: 'json' }
+import track202629 from './data/track-202629.json' with { type: 'json' }
+import track202630 from './data/track-202630.json' with { type: 'json' }
+import track202631 from './data/track-202631.json' with { type: 'json' }
 import track2118 from './data/track-2118.json' with { type: 'json' }
 import track2220 from './data/track-2220.json' with { type: 'json' }
 import track2411 from './data/track-2411.json' with { type: 'json' }
-import typhoonList from './data/typhoon-list.json' with { type: 'json' }
+import typhoonHistory from './data/typhoon-history.json' with { type: 'json' }
+import typhoonLive from './data/typhoon-live.json' with { type: 'json' }
 import waterGrade from './data/water-grade.json' with { type: 'json' }
 import weeklyScenes from './data/weekly-scenes.json' with { type: 'json' }
 
@@ -66,10 +75,19 @@ export const files = {
   'stations.json': stations,
   'track-1409.json': track1409,
   'track-2017.json': track2017,
+  'track-202624.json': track202624,
+  'track-202625.json': track202625,
+  'track-202626.json': track202626,
+  'track-202627.json': track202627,
+  'track-202628.json': track202628,
+  'track-202629.json': track202629,
+  'track-202630.json': track202630,
+  'track-202631.json': track202631,
   'track-2118.json': track2118,
   'track-2220.json': track2220,
   'track-2411.json': track2411,
-  'typhoon-list.json': typhoonList,
+  'typhoon-history.json': typhoonHistory,
+  'typhoon-live.json': typhoonLive,
   'water-grade.json': waterGrade,
   'weekly-scenes.json': weeklyScenes,
 }

@@ -1,0 +1,102 @@
+{
+  "generatedAt": "2026-10-30T11:08:31.430473+08:00",
+  "year": "2026",
+  "items": [
+    {
+      "id": "202631",
+      "name": "烟花 IN-FA",
+      "grade": "超强台风",
+      "date": "2026-10-24",
+      "landfall": "未登陆",
+      "wind": 60.0,
+      "pressure": 920.0,
+      "active": true,
+      "live": true,
+      "source": "实时台风"
+    },
+    {
+      "id": "202624",
+      "name": "科罗旺 KROVANH",
+      "grade": "热带风暴",
+      "date": "2026-09-01",
+      "landfall": "未登陆",
+      "wind": 23.0,
+      "pressure": 990.0,
+      "active": false,
+      "live": true,
+      "source": "实时台风"
+    },
+    {
+      "id": "202625",
+      "name": "杜鹃 DUJUAN",
+      "grade": "台风",
+      "date": "2026-09-16",
+      "landfall": "未登陆",
+      "wind": 35.0,
+      "pressure": 970.0,
+      "active": false,
+      "live": true,
+      "source": "实时台风"
+    },
+    {
+      "id": "202626",
+      "name": "舒力基 SURIGAE",
+      "grade": "超强台风",
+      "date": "2026-09-23",
+      "landfall": "未登陆",
+      "wind": 58.0,
+      "pressure": 925.0,
+      "active": false,
+      "live": true,
+      "source": "实时台风"
+    },
+    {
+      "id": "202627",
+      "name": "彩云 CHOI-WAN",
+      "grade": "超强台风",
+      "date": "2026-10-01",
+      "landfall": "未登陆",
+      "wind": 65.0,
+      "pressure": 910.0,
+      "active": false,
+      "live": true,
+      "source": "实时台风"
+    },
+    {
+      "id": "202628",
+      "name": "诺洛 NOLO",
+      "grade": "超强台风",
+      "date": "2026-10-05",
+      "landfall": "未登陆",
+      "wind": 52.0,
+      "pressure": 935.0,
+      "active": false,
+      "live": true,
+      "source": "实时台风"
+    },
+    {
+      "id": "202629",
+      "name": "小熊 KOGUMA",
+      "grade": "超强台风",
+      "date": "2026-10-05",
+      "landfall": "未登陆",
+      "wind": 58.0,
+      "pressure": 925.0,
+      "active": false,
+      "live": true,
+      "source": "实时台风"
+    },
+    {
+      "id": "202630",
+      "name": "蔷琵 CHAMPI",
+      "grade": "超强台风",
+      "date": "2026-10-15",
+      "landfall": "未登陆",
+      "wind": 68.0,
+      "pressure": 905.0,
+      "active": false,
+      "live": true,
+      "source": "实时台风"
+    }
+  ]
+}

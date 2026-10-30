@@ -5,7 +5,7 @@
     "type": "SAR 雷达",
     "resolution": "5×20 m",
     "revisit": "6 天",
-    "scenes": 1286,
+    "scenes": 1314,
     "latest": "2026-09-15 22:14",
     "usage": "台风期洪涝淹没、全天候形变",
     "status": "在线"
@@ -16,7 +16,7 @@
     "type": "多光谱光学",
     "resolution": "10–60 m",
     "revisit": "5 天",
-    "scenes": 3452,
+    "scenes": 3453,
     "latest": "2026-09-16 11:02",
     "usage": "Chl-a/SPM 反演、NDVI、岸线",
     "status": "在线"
@@ -27,7 +27,7 @@
     "type": "海温/水色",
     "resolution": "300 m–1 km",
     "revisit": "1 天",
-    "scenes": 5621,
+    "scenes": 5437,
     "latest": "2026-09-16 09:40",
     "usage": "海表温度 SST、大范围水色",
     "status": "在线"
@@ -38,7 +38,7 @@
     "type": "多光谱+热红外",
     "resolution": "15–100 m",
     "revisit": "8 天",
-    "scenes": 2108,
+    "scenes": 2168,
     "latest": "2026-09-14 03:15",
     "usage": "长时序岸线、红树林变迁",
     "status": "在线"
@@ -49,7 +49,7 @@
     "type": "多光谱光学",
     "resolution": "2–16 m",
     "revisit": "4 天",
-    "scenes": 1864,
+    "scenes": 1888,
     "latest": "2026-09-15 15:26",
     "usage": "国产高分辨率地表监测",
     "status": "在线"
@@ -60,7 +60,7 @@
     "type": "亚米级光学",
     "resolution": "0.8 m",
     "revisit": "5 天",
-    "scenes": 968,
+    "scenes": 948,
     "latest": "2026-09-14 10:48",
     "usage": "建筑损毁精细判读",
     "status": "在线"
@@ -71,7 +71,7 @@
     "type": "SAR 雷达",
     "resolution": "1–500 m",
     "revisit": "按需",
-    "scenes": 436,
+    "scenes": 420,
     "latest": "2026-09-13 21:05",
     "usage": "台风期国产 SAR 应急成像",
     "status": "在线"
@@ -82,7 +82,7 @@
     "type": "中分辨率成像",
     "resolution": "250 m–1 km",
     "revisit": "1 天",
-    "scenes": 8832,
+    "scenes": 8912,
     "latest": "2026-09-16 06:30",
     "usage": "大尺度 SST、云图、藻华普查",
     "status": "在线"
@@ -93,7 +93,7 @@
     "type": "夜光/可见光",
     "resolution": "375–750 m",
     "revisit": "1 天",
-    "scenes": 4210,
+    "scenes": 4181,
     "latest": "2026-09-16 02:12",
     "usage": "夜间灯光评估停电与恢复",
     "status": "在线"
