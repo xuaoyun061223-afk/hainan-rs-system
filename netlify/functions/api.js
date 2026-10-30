@@ -17,6 +17,7 @@ import {
   recentDays,
   extendMangrove,
 } from './realtime.js'
+import { assessDamage } from './damage_model.js'
 
 const HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',
@@ -197,6 +198,42 @@ export const handler = async (event) => {
   if (path === '/ecology/mangrove') {
     const data = readFile(routeIndex.routes['/api/ecology/mangrove'])
     if (data) return jsonResponse(200, extendMangrove(data))
+  }
+
+  // 灾害评估对象：实时台风（活跃优先）+ 历史台风，供前端下拉选择
+  if (path === '/damage/targets') {
+    const ctx = await loadLiveContext()
+    const live = ctx.typhoons.length
+      ? mapTyphoonList(ctx.typhoons, ctx.details, 8).map((t) => ({ ...t, source: '实时台风' }))
+      : []
+    const history = (readFile(routeIndex.routes['/api/typhoon/list']) || []).map((t) => ({
+      ...t,
+      active: false,
+      live: false,
+      source: '历史台风',
+    }))
+    const seen = new Set(live.map((t) => t.id))
+    return jsonResponse(200, [...live, ...history.filter((t) => !seen.has(t.id))])
+  }
+
+  // 单个台风的灾害快速评估：历史与实时台风同一套模型，默认评估 2411「摩羯」
+  const assessMatch = path.match(/^\/damage\/assessment(?:\/([^/]+))?$/)
+  if (assessMatch) {
+    const id = decodeURIComponent(assessMatch[1] || '2411')
+    const history = readFile(routeIndex.routes['/api/typhoon/list']) || []
+    const ctx = await loadLiveContext()
+    const liveRows = ctx.typhoons.length ? mapTyphoonList(ctx.typhoons, ctx.details, 8) : []
+    const row = history.find((t) => t.id === id) || liveRows.find((t) => t.id === id)
+    if (!row) return jsonResponse(404, { error: 'Not Found', id })
+
+    const trackFile = routeIndex.typhoonTracks[id]
+    const track = trackFile
+      ? readFile(trackFile) || []
+      : (() => {
+          const info = ctx.details[id]
+          return info ? mapTrackPoints(info) : []
+        })()
+    return jsonResponse(200, assessDamage(row, track))
   }
 
   // 其余无参数端点：用索引精确匹配

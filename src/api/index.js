@@ -98,6 +98,16 @@ export function fetchInundation() {
   return USE_MOCK ? resolve(mock.inundationPolygons) : api('/api/damage/inundation')
 }
 
+// 灾害评估对象（实时台风 + 历史台风）与单台风的评估结果。
+// mock 模式下返回空值，组件会自动回退到上面的快照接口。
+export function fetchDamageTargets() {
+  return USE_MOCK ? resolve([]) : api('/api/damage/targets')
+}
+
+export function fetchDamageAssessment(typhoonId) {
+  return USE_MOCK ? resolve(null) : api(`/api/damage/assessment/${encodeURIComponent(typhoonId)}`)
+}
+
 // ─── 卫星数据中心 ───
 export function fetchSatelliteCatalog() {
   return USE_MOCK ? resolve(mock.satelliteCatalog) : api('/api/satellite/catalog')
