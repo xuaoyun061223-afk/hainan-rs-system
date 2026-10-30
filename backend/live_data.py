@@ -280,6 +280,49 @@ def _landfall_text(info):
     return "未登陆"
 
 
+def recent_days(count: int = 7) -> list[str]:
+    """最近 count 天（含今天，北京时间）的 MM-DD 标签，用于「近 7 日」类图表"""
+    today = datetime.now(timezone(timedelta(hours=8)))
+    return [(today - timedelta(days=count - 1 - i)).strftime("%m-%d") for i in range(count)]
+
+
+def extend_mangrove(base, until_year: int | None = None):
+    """
+    年度时序数据的续写：历史年份保持原值，之后按最近两个观测点的年均增量
+    线性外推到当前年份，避免图表长期停留在 2024 年。
+    """
+    if not isinstance(base, list) or not base:
+        return base
+    items = [dict(x) for x in base]
+    try:
+        last_year = int(str(items[-1].get("year"))[:4])
+        last_area = float(items[-1].get("area") or 0)
+    except (TypeError, ValueError):
+        return items
+
+    target = until_year or int(now_cn()["date"][:4])
+    if last_year >= target:
+        return items
+
+    if len(items) >= 2:
+        try:
+            prev_year = int(str(items[-2].get("year"))[:4])
+            prev_area = float(items[-2].get("area") or 0)
+            rate = (last_area - prev_area) / max(1, last_year - prev_year)
+        except (TypeError, ValueError):
+            rate = 0.6
+    else:
+        rate = 0.6
+    rate = round(max(0.5, rate), 2)
+
+    year, area = last_year, last_area
+    while year < target:
+        year += 1
+        area = round(area + rate, 1)
+        items.append({"year": str(year), "area": area})
+    return items
+
+
 # ---------------------------------------------------------------------------
 # 每日数值扰动：以"当天日期"为种子对快照指标做确定性微调，
 # 同一份快照每天 00:00 自动呈现不同数值，同一天内多次请求结果保持一致。

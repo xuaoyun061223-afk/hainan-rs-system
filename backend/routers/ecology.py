@@ -31,4 +31,6 @@ def get_shoreline():
 
 @router.get("/mangrove")
 def get_mangrove():
-    return _daily(MANGROVE_AREA, "mangrove")
+    # 快照只到 2024 年，按近年增速自动续写到当前年份。
+    # 红树林面积是年度统计量，不做逐日扰动，避免长时序曲线出现不符合实际的锯齿。
+    return live_data.extend_mangrove(MANGROVE_AREA)

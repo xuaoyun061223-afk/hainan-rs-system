@@ -335,3 +335,48 @@ export function applyDailyVariance(data, dateKey, path = 'root') {
   }
   return data
 }
+
+/** 最近 count 天（含今天，北京时间）的 MM-DD 标签，用于「近 7 日」类图表 */
+export function recentDays(count = 7) {
+  const now = Date.now() + 8 * 3600 * 1000
+  const out = []
+  for (let i = count - 1; i >= 0; i--) {
+    const iso = new Date(now - i * 86400000).toISOString()
+    out.push(`${iso.slice(5, 7)}-${iso.slice(8, 10)}`)
+  }
+  return out
+}
+
+/**
+ * 年度时序数据的续写：历史年份保持原值，之后按最近两个观测点的年均增量
+ * 线性外推到当前年份，避免图表长期停留在 2024 年。
+ */
+export function extendMangrove(base, untilYear) {
+  if (!Array.isArray(base) || !base.length) return base
+  const items = base.map((x) => ({ ...x }))
+  const lastYear = parseInt(String(items[items.length - 1].year).slice(0, 4), 10)
+  const lastArea = Number(items[items.length - 1].area)
+  if (!Number.isFinite(lastYear) || !Number.isFinite(lastArea)) return items
+
+  const target = untilYear || Number(nowCN().date.slice(0, 4))
+  if (lastYear >= target) return items
+
+  let rate = 0.6
+  if (items.length >= 2) {
+    const prevYear = parseInt(String(items[items.length - 2].year).slice(0, 4), 10)
+    const prevArea = Number(items[items.length - 2].area)
+    if (Number.isFinite(prevYear) && Number.isFinite(prevArea)) {
+      rate = (lastArea - prevArea) / Math.max(1, lastYear - prevYear)
+    }
+  }
+  rate = Math.round(Math.max(0.5, rate) * 100) / 100
+
+  let year = lastYear
+  let area = lastArea
+  while (year < target) {
+    year += 1
+    area = Math.round((area + rate) * 10) / 10
+    items.push({ year: String(year), area })
+  }
+  return items
+}

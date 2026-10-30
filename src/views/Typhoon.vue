@@ -239,8 +239,32 @@ onMounted(async () => {
 .detail-col { min-height: 0; }
 .detail-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .detail-name { font-size: 17px; font-weight: 700; color: #eaf4ff; }
-:deep(.detail-desc .el-descriptions__label) { width: 92px; color: var(--text-sub); }
-:deep(.detail-desc .el-descriptions__body .el-descriptions__table) { color: var(--text-main); }
+/* Element Plus 描述列表默认是浅色主题：.el-descriptions__body 背景是白色
+   （--el-fill-color-blank），带边框时标签列又是浅灰底，在深色面板上非常突兀。
+   这里改用透明/深蓝底 + 青色描边，让详情表与面板融为一体。 */
+:deep(.detail-desc) {
+  --el-descriptions-table-border: 1px solid rgba(64, 158, 255, 0.22);
+  --el-descriptions-item-bordered-label-background: rgba(0, 229, 255, 0.06);
+  --el-text-color-primary: #eaf4ff;
+  --el-text-color-regular: #eaf4ff;
+}
+:deep(.detail-desc .el-descriptions__body) {
+  background-color: transparent;
+}
+:deep(.detail-desc .el-descriptions__table.is-bordered .el-descriptions__cell) {
+  border-color: rgba(64, 158, 255, 0.22);
+  background-color: rgba(8, 26, 53, 0.55);
+  color: #eaf4ff;
+}
+:deep(.detail-desc .el-descriptions__cell.el-descriptions__label) {
+  width: 92px;
+  color: #9fc4ef;
+  font-weight: 500;
+  background-color: rgba(0, 229, 255, 0.06);
+}
+:deep(.detail-desc .el-descriptions__cell.el-descriptions__content) {
+  color: #eaf4ff;
+}
 .landfall-box {
   margin-top: 14px;
   border: 1px solid rgba(255, 92, 92, 0.3);

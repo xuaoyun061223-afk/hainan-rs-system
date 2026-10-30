@@ -4,7 +4,7 @@
       <StatCard label="当前叶绿素 a" :value="current?.chla || '-'" unit="mg/m³" icon="Histogram" color="#2ee6a6" :sub="`${appStore.activeStation} · 水质${current?.grade || ''}`" />
       <StatCard label="当前海表温度" :value="current?.sst || '-'" unit="℃" icon="Sunny" color="#ffb02e" :sub="`赤潮风险：${current?.risk || ''}`" />
       <StatCard label="侵蚀型岸段" :value="erodingCount" unit="段" icon="TrendCharts" color="#ff5c5c" sub="共监测 8 个典型岸段" />
-      <StatCard label="红树林面积（2024）" :value="56.8" unit="km²" icon="Cpu" color="#2f9bff" sub="2000 年以来净增 14.2 km²" />
+      <StatCard :label="`红树林面积（${mangroveLatest.year || '—'}）`" :value="mangroveLatest.area ?? '-'" unit="km²" icon="Cpu" color="#2f9bff" :sub="mangroveSub" />
     </div>
 
     <div class="toolbar tech-panel">
@@ -82,6 +82,17 @@ const metricMeta = {
 const metricLabel = computed(() => metricMeta[metric.value].label)
 const current = computed(() => stations.value.find((s) => s.name === appStore.activeStation) || stations.value[0])
 const erodingCount = computed(() => shorelineChange.value.filter((s) => s.rate < 0).length)
+// 红树林面积取时序最后一个年份（后端会按当前年份自动续写），避免卡片写死在 2024 年
+const mangroveLatest = computed(() => mangroveArea.value[mangroveArea.value.length - 1] || {})
+const mangroveFirst = computed(() => mangroveArea.value[0] || {})
+const mangroveSub = computed(() => {
+  const latest = mangroveLatest.value.area
+  const first = mangroveFirst.value.area
+  if (!Number.isFinite(latest) || !Number.isFinite(first) || !mangroveFirst.value.year) {
+    return '长时序遥感反演'
+  }
+  return `${mangroveFirst.value.year} 年以来净增 ${(latest - first).toFixed(1)} km²`
+})
 
 const mapLegend = [
   { label: '低风险', color: '#2ee6a6' },

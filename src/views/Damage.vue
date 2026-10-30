@@ -24,57 +24,61 @@
           <BaseMap base-type="satellite" :stations="[]" :track="[]" :inundation="inundationPolys" :legend="mapLegend" />
         </div>
       </div>
-      <div class="side-col">
-        <div class="tech-panel chart-panel">
-          <div class="panel-title">建筑损毁分级（xBD 模型）</div>
-          <ChartBox :option="damagePie" height="230px" />
-        </div>
-        <div class="tech-panel chart-panel">
-          <div class="panel-title">灾后恢复指标</div>
-          <div class="recover-grid">
-            <div class="recover-item">
-              <div class="recover-label">电力恢复率</div>
-              <el-progress :percentage="13.5" :stroke-width="12" color="#ff5c5c" :show-text="false" />
-              <b>13.5%</b>
-            </div>
-            <div class="recover-item">
-              <div class="recover-label">道路通行率</div>
-              <el-progress :percentage="68" :stroke-width="12" color="#ffb02e" :show-text="false" />
-              <b>68%</b>
-            </div>
-            <div class="recover-item">
-              <div class="recover-label">NDVI 恢复度</div>
-              <el-progress :percentage="42" :stroke-width="12" color="#2ee6a6" :show-text="false" />
-              <b>42%</b>
-            </div>
-            <div class="recover-note">基于 VIIRS 夜间灯光、路网影像与 Sentinel-2 NDVI 时序自动计算</div>
+      <div class="tech-panel recover-panel">
+        <div class="panel-title">灾后恢复指标</div>
+        <div class="recover-grid">
+          <div class="recover-item">
+            <div class="recover-label">电力恢复率</div>
+            <el-progress :percentage="13.5" :stroke-width="12" color="#ff5c5c" :show-text="false" />
+            <b>13.5%</b>
           </div>
+          <div class="recover-item">
+            <div class="recover-label">道路通行率</div>
+            <el-progress :percentage="68" :stroke-width="12" color="#ffb02e" :show-text="false" />
+            <b>68%</b>
+          </div>
+          <div class="recover-item">
+            <div class="recover-label">NDVI 恢复度</div>
+            <el-progress :percentage="42" :stroke-width="12" color="#2ee6a6" :show-text="false" />
+            <b>42%</b>
+          </div>
+          <div class="recover-note">基于 VIIRS 夜间灯光、路网影像与 Sentinel-2 NDVI 时序自动计算</div>
         </div>
       </div>
     </div>
 
     <div class="bottom-row">
       <div class="tech-panel chart-panel">
+        <div class="panel-title">建筑损毁分级（xBD 模型）</div>
+        <div class="chart-body">
+          <ChartBox :option="damagePie" height="100%" />
+        </div>
+      </div>
+      <div class="tech-panel chart-panel">
         <div class="panel-title">台风前后海南岛 NDVI 均值时序</div>
-        <ChartBox :option="ndviOption" height="230px" />
+        <div class="chart-body">
+          <ChartBox :option="ndviOption" height="100%" />
+        </div>
       </div>
       <div class="tech-panel chart-panel">
         <div class="panel-title">重点市县灾情统计</div>
-        <el-table :data="cityDamageData" size="small" height="230px">
-          <el-table-column prop="city" label="市县" width="70" />
-          <el-table-column prop="inundation" label="淹没(km²)" width="96" />
-          <el-table-column prop="buildings" label="受损建筑(栋)" width="110" />
-          <el-table-column label="植被受损(km²)">
-            <template #default="{ row }">
-              <div class="bar-cell">
-                <div class="bar-track">
-                  <div class="bar-fill" :style="{ width: (row.vegetation / 500) * 100 + '%' }"></div>
+        <div class="table-body">
+          <el-table :data="cityDamageData" size="small" height="100%">
+            <el-table-column prop="city" label="市县" width="70" />
+            <el-table-column prop="inundation" label="淹没(km²)" width="96" />
+            <el-table-column prop="buildings" label="受损建筑(栋)" width="110" />
+            <el-table-column label="植被受损(km²)">
+              <template #default="{ row }">
+                <div class="bar-cell">
+                  <div class="bar-track">
+                    <div class="bar-fill" :style="{ width: (row.vegetation / 500) * 100 + '%' }"></div>
+                  </div>
+                  <span>{{ row.vegetation }}</span>
                 </div>
-                <span>{{ row.vegetation }}</span>
-              </div>
-            </template>
-          </el-table-column>
-        </el-table>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
       </div>
     </div>
   </div>
@@ -126,7 +130,7 @@ const damagePie = computed(() => ({
 
 const ndviOption = computed(() => ({
   tooltip: { trigger: 'axis' },
-  legend: { data: ['灾前 NDVI', '灾后 NDVI'], textStyle: { color: '#8aa6c8' }, top: 0, right: 0 },
+  legend: { data: ['灾前 NDVI', '灾后 NDVI'], textStyle: { color: '#8aa6c8' }, top: 0, left: 0 },
   grid: { left: 48, right: 24, top: 34, bottom: 28 },
   xAxis: { type: 'category', data: ndviData.value.dates, ...axisStyle },
   yAxis: { type: 'value', min: 0.4, max: 0.85, ...axisStyle },
@@ -170,21 +174,76 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.damage { display: flex; flex-direction: column; gap: 12px; }
-.top-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; }
+.damage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  /* 与其它页面保持一致的"满屏不滚动"布局；窗口过矮时按 min-height 撑开，
+     由 el-main 负责滚动，而不是让面板互相压盖 */
+  height: calc(100vh - 88px);
+  min-height: 640px;
+}
+.top-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+}
 .event-info { display: flex; align-items: center; gap: 10px; font-size: 14px; }
 .data-note { font-size: 12px; color: var(--text-sub); margin-left: 8px; }
-.stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-.main-row { display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; height: 340px; }
-.map-panel, .chart-panel { display: flex; flex-direction: column; }
-.map-container { flex: 1; min-height: 0; }
-.side-col { display: flex; flex-direction: column; gap: 12px; }
-.side-col .chart-panel { flex: 1; }
-.recover-grid { padding: 6px 4px; display: flex; flex-direction: column; gap: 14px; }
-.recover-item { display: grid; grid-template-columns: 90px 1fr 52px; align-items: center; gap: 10px; font-size: 13px; }
+.stat-row { flex: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.main-row {
+  flex: 1 1 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  gap: 12px;
+}
+.map-panel,
+.recover-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.map-container { flex: 1; min-height: 0; position: relative; }
+.recover-grid {
+  flex: 1;
+  min-height: 0;
+  padding: 6px 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  gap: 14px;
+}
+.recover-item {
+  display: grid;
+  grid-template-columns: 90px 1fr 52px;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
 .recover-item b { color: #eaf4ff; }
 .recover-note { font-size: 11px; color: var(--text-sub); line-height: 1.6; }
-.bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.bottom-row {
+  flex: none;
+  height: 246px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 12px;
+}
+.chart-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: 12px 14px;
+}
+.chart-body { flex: 1; min-height: 0; }
+.table-body { flex: 1; min-height: 0; overflow: hidden; }
 .bar-cell { display: flex; align-items: center; gap: 8px; }
 .bar-track { flex: 1; height: 8px; background: rgba(47,155,255,0.12); border-radius: 4px; overflow: hidden; }
 .bar-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); border-radius: 4px; }

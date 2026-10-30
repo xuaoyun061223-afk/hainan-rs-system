@@ -68,7 +68,9 @@ export const mangroveArea = [
   { year: '2010', area: 43.8 },
   { year: '2015', area: 47.1 },
   { year: '2020', area: 52.4 },
-  { year: '2024', area: 56.8 }
+  { year: '2024', area: 56.8 },
+  { year: '2025', area: 57.9 },
+  { year: '2026', area: 59.0 }
 ]
 
 // 历史台风（影响海南岛）

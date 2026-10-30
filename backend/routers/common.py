@@ -64,7 +64,8 @@ def get_overview():
 
 @router.get("/weekly-scenes")
 def get_weekly_scenes():
-    return _daily(WEEKLY_SCENES, "weekly-scenes")
+    # 日期标签按当天滚动（最近 7 天），避免图例长期停留在历史日期
+    return {**_daily(WEEKLY_SCENES, "weekly-scenes"), "days": live_data.recent_days(7)}
 
 
 @router.get("/water-grade")

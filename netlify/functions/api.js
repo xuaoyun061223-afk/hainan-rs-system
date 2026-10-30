@@ -14,6 +14,8 @@ import {
   mapTyphoonList,
   buildAlerts,
   applyDailyVariance,
+  recentDays,
+  extendMangrove,
 } from './realtime.js'
 
 const HEADERS = {
@@ -182,6 +184,19 @@ export const handler = async (event) => {
         seaTemperature: ctx.sea ? ctx.sea.sst : null,
       },
     })
+  }
+
+  // 近 7 日卫星影像接入：日期标签按当天滚动，避免长期停留在历史日期
+  if (path === '/weekly-scenes') {
+    const data = readDaily(routeIndex.routes['/api/weekly-scenes'])
+    if (data) return jsonResponse(200, { ...data, days: recentDays(7) })
+  }
+
+  // 红树林面积：快照只到 2024 年，按近年增速自动续写到当前年份。
+  // 年度统计量不做逐日扰动，避免长时序曲线出现不符合实际的锯齿。
+  if (path === '/ecology/mangrove') {
+    const data = readFile(routeIndex.routes['/api/ecology/mangrove'])
+    if (data) return jsonResponse(200, extendMangrove(data))
   }
 
   // 其余无参数端点：用索引精确匹配
