@@ -9,6 +9,7 @@
           size="small"
           filterable
           class="target-select"
+          popper-class="damage-typhoon-popper"
           :loading="targetLoading"
           @change="loadAssessment"
         >
@@ -347,11 +348,14 @@ onMounted(async () => {
 }
 .event-info { display: flex; align-items: center; gap: 10px; font-size: 14px; min-width: 0; }
 .label { color: var(--text-sub); }
-.target-select { width: 232px; }
+.target-select { width: 268px; }
 :deep(.target-select .el-select__wrapper) {
   background: rgba(8, 26, 53, 0.7);
   box-shadow: 0 0 0 1px rgba(64, 158, 255, 0.28) inset;
 }
+:deep(.target-select .el-select__selected-item) { color: #eaf4ff; }
+:deep(.target-select .el-select__placeholder) { color: var(--text-sub); }
+:deep(.target-select .el-select__caret) { color: #8aa6c8; }
 .opt-name { color: #eaf4ff; }
 .opt-grade { float: right; margin-left: 16px; color: var(--text-sub); font-size: 12px; }
 .target-count { font-size: 12px; color: var(--text-sub); white-space: nowrap; }
@@ -413,4 +417,43 @@ onMounted(async () => {
 .bar-track { flex: 1; height: 8px; background: rgba(47,155,255,0.12); border-radius: 4px; overflow: hidden; }
 .bar-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); border-radius: 4px; }
 .bar-cell span { font-size: 12px; color: var(--text-sub); width: 52px; }
+</style>
+
+<!-- 下拉面板通过 teleport 挂到 body，scoped 样式无法命中，这里用非 scoped 覆盖为深色主题 -->
+<style>
+.damage-typhoon-popper.el-popper {
+  --el-bg-color-overlay: rgba(8, 26, 53, 0.96);
+  --el-popper-bg-color-light: #0a2040;
+  --el-border-color-light: rgba(64, 158, 255, 0.28);
+  --el-box-shadow-light: 0 8px 28px rgba(0, 0, 0, 0.5);
+  --el-text-color-regular: #d6e8ff;
+  --el-fill-color-light: rgba(47, 155, 255, 0.14);
+  --el-color-info: #7fa8d8;
+  border-radius: 6px;
+}
+.damage-typhoon-popper .el-select-dropdown__list { padding: 4px 0; }
+.damage-typhoon-popper .el-select-group__title { color: #7fa8d8; font-weight: 500; }
+.damage-typhoon-popper .el-select-dropdown__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  color: #d6e8ff;
+}
+.damage-typhoon-popper .el-select-dropdown__item.is-hovering {
+  color: #ffffff;
+  background-color: rgba(47, 155, 255, 0.16);
+}
+.damage-typhoon-popper .el-select-dropdown__item.is-selected { color: #2ee6a6; }
+.damage-typhoon-popper .opt-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #d6e8ff;
+}
+.damage-typhoon-popper .el-select-dropdown__item.is-hovering .opt-name { color: #ffffff; }
+.damage-typhoon-popper .el-select-dropdown__item.is-selected .opt-name { color: #2ee6a6; }
+.damage-typhoon-popper .opt-grade { float: none; margin-left: 0; flex: none; color: #8aa6c8; }
+.damage-typhoon-popper .el-select-dropdown__item.is-selected .opt-grade { color: #6fcfa4; }
 </style>
