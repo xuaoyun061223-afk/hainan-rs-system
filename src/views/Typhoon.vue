@@ -49,12 +49,12 @@
             <el-descriptions-item label="中心气压">{{ active.pressure }} hPa</el-descriptions-item>
           </el-descriptions>
           <div class="landfall-box">
-            <div class="landfall-title">登陆点关键参数</div>
+            <div class="landfall-title">{{ hasLandfall ? '登陆点关键参数' : '最强时段关键参数' }}</div>
             <div class="landfall-grid">
               <div><span>风圈半径</span><b>{{ landfall.radius }} km</b></div>
-              <div><span>登陆风速</span><b>{{ landfall.wind }} m/s</b></div>
-              <div><span>登陆气压</span><b>{{ landfall.pressure }} hPa</b></div>
-              <div><span>风险等级</span><b class="danger">特别重大</b></div>
+              <div><span>{{ hasLandfall ? '登陆风速' : '最强风速' }}</span><b>{{ landfall.wind }} m/s</b></div>
+              <div><span>{{ hasLandfall ? '登陆气压' : '对应气压' }}</span><b>{{ landfall.pressure }} hPa</b></div>
+              <div><span>风险等级</span><b class="danger">{{ riskLevel }}</b></div>
             </div>
           </div>
         </div>
@@ -90,7 +90,21 @@ const track = ref([])
 const active = computed(
   () => list.value.find((t) => t.id === appStore.activeTyphoonId) || list.value[0] || {}
 )
-const landfall = computed(() => track.value.find((p) => (p.grade || '').includes('登陆')) || track.value[0] || {})
+const hasLandfall = computed(() => track.value.some((p) => (p.grade || '').includes('登陆')))
+// 已登陆取登陆点；未登陆取最强时段（最大风速）点位，避免用起始弱台风点误导
+const landfall = computed(() => {
+  if (hasLandfall.value) {
+    return track.value.find((p) => (p.grade || '').includes('登陆')) || {}
+  }
+  return track.value.reduce((best, p) => ((p.wind || 0) > (best.wind || 0) ? p : best), track.value[0] || {})
+})
+const riskLevel = computed(() => {
+  const w = active.value.wind || 0
+  if (w >= 51) return '特别重大'
+  if (w >= 41.5) return '重大'
+  if (w >= 32.7) return '较大'
+  return '一般'
+})
 
 async function load(id) {
   track.value = await fetchTyphoonTrack(id)
