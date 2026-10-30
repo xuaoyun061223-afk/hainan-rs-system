@@ -259,6 +259,26 @@ onMounted(() => {
   drawHainan()
   drawTrack()
   drawInundation()
+
+  // 相机操控调节：Cesium 默认为"自由球体"操控，惯性大、自由度多，
+  // 拖动后镜头会继续滑行一段距离，稍一用力就转过头，很难停到目标位置。
+  // 这里降低惯性、收起自由视角、收紧缩放范围，让操作手感接近二维地图。
+  const ctrl = viewer.screenSpaceCameraController
+  ctrl.inertiaSpin = 0.06        // 松开鼠标后几乎立即停住，不再"甩出去"
+  ctrl.inertiaTranslate = 0.06
+  ctrl.inertiaZoom = 0.15
+  ctrl.enableLook = false        // 禁用自由视角，避免镜头被拖歪、出现倾斜地平线
+  ctrl.enableTilt = false        // 锁定俯仰，只能平移与缩放
+  ctrl.enableCollisionDetection = true   // 防止镜头穿到地平面以下
+  ctrl.minimumZoomDistance = 2000        // 最近 2 km
+  ctrl.maximumZoomDistance = 12000000    // 最远约 1.2 万 km，避免缩到看不清海南岛
+  ctrl.rotateEventTypes = [Cesium.CameraEventType.LEFT_DRAG]
+  ctrl.zoomEventTypes = [
+    Cesium.CameraEventType.RIGHT_DRAG,
+    Cesium.CameraEventType.WHEEL,
+    Cesium.CameraEventType.PINCH
+  ]
+
   viewer.scene.requestRender()
 
   // 容器尺寸变化（侧栏切换、窗口缩放）时主动同步 canvas 分辨率，
