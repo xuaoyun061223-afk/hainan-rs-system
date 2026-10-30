@@ -125,6 +125,38 @@ def _impact_anchor(track, landfall_text: str):
     return {"lon": REF_LANDFALL[0], "lat": REF_LANDFALL[1], "inside": False}
 
 
+def _landfall_city(text: str, anchor: dict) -> str:
+    """登陆/影响市县名：优先取描述中的市县，否则取离锚点最近的市县（60 km 内）"""
+    text = text or ""
+    for city in CITY_ANCHORS:
+        if city in text:
+            return city
+    best_city, best_dist = "", 999.0
+    for city, (lon, lat) in CITY_ANCHORS.items():
+        d = _dist_km(anchor["lon"], anchor["lat"], lon, lat)
+        if d < best_dist:
+            best_city, best_dist = city, d
+    return best_city if best_dist <= 60 else ""
+
+
+def _track_points(track) -> list:
+    """前端地图需要的轨迹点（经纬度顺序为 [lon, lat]，与淹没区一致）"""
+    out = []
+    for p in track or []:
+        if p.get("lon") is None or p.get("lat") is None:
+            continue
+        out.append({
+            "t": str(p.get("t") or ""),
+            "lon": p.get("lon"),
+            "lat": p.get("lat"),
+            "grade": str(p.get("grade") or ""),
+            "wind": p.get("wind"),
+            "pressure": p.get("pressure"),
+            "radius": p.get("radius"),
+        })
+    return out
+
+
 def _ndvi_series(r: float, landfall_t: str, year: int) -> dict:
     """台风前后 NDVI 时序：以登陆日为界，前段正常值、后段骤降再逐步恢复"""
     try:
@@ -191,7 +223,14 @@ def assess(typhoon: dict, track: list) -> dict:
     bld = _distribute(damaged_total, w_bd, 0)
     veg = _distribute(vegetation, w_veg, 1)
     cities = [
-        {"city": c["city"], "inundation": ins[i], "buildings": int(bld[i]), "vegetation": veg[i]}
+        {
+            "city": c["city"],
+            "lon": c["lon"],
+            "lat": c["lat"],
+            "inundation": ins[i],
+            "buildings": int(bld[i]),
+            "vegetation": veg[i],
+        }
         for i, c in enumerate(CITY_BASE)
     ]
     cities.sort(key=lambda x: x["inundation"], reverse=True)
@@ -214,6 +253,7 @@ def assess(typhoon: dict, track: list) -> dict:
     year = int(str(typhoon.get("date") or "")[:4] or 2026)
     t = str(lf.get("t") or "")
     ndvi = _ndvi_series(r, t[0:5] if len(t) >= 5 else "09-06", year)
+    landfall_text = str(typhoon.get("landfall") or "")
 
     return {
         "id": str(typhoon.get("id") or ""),
@@ -222,7 +262,8 @@ def assess(typhoon: dict, track: list) -> dict:
         "wind": wind,
         "pressure": typhoon.get("pressure"),
         "date": typhoon.get("date"),
-        "landfall": typhoon.get("landfall") or "未登陆",
+        "landfall": landfall_text or "未登陆",
+        "landfallCity": _landfall_city(landfall_text, anchor),
         "active": active,
         "statusText": status_text,
         "impactLevel": level,
@@ -239,4 +280,6 @@ def assess(typhoon: dict, track: list) -> dict:
         "cities": cities,
         "ndvi": ndvi,
         "polygons": polygons,
+        # 轨迹随评估一起返回，前端地图据此绘制完整路径、登陆点与风圈
+        "track": _track_points(track),
     }

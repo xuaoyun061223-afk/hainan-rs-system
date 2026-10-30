@@ -6,6 +6,7 @@
   "pressure": 980,
   "date": "2020-10-24",
   "landfall": "海南近海",
+  "landfallCity": "",
   "active": false,
   "statusText": "已完成灾后快速评估",
   "impactLevel": "较大",
@@ -31,48 +32,64 @@
   "cities": [
     {
       "city": "文昌",
+      "lon": 110.8,
+      "lat": 19.55,
       "inundation": 29.7,
       "buildings": 14855,
       "vegetation": 241.2
     },
     {
       "city": "海口",
+      "lon": 110.32,
+      "lat": 20.04,
       "inundation": 8.7,
       "buildings": 4932,
       "vegetation": 60.0
     },
     {
       "city": "琼海",
+      "lon": 110.47,
+      "lat": 19.26,
       "inundation": 6.4,
       "buildings": 2432,
       "vegetation": 54.3
     },
     {
       "city": "定安",
+      "lon": 110.35,
+      "lat": 19.68,
       "inundation": 3.8,
       "buildings": 1173,
       "vegetation": 42.2
     },
     {
       "city": "澄迈",
+      "lon": 110.0,
+      "lat": 19.74,
       "inundation": 3.1,
       "buildings": 1365,
       "vegetation": 24.3
     },
     {
       "city": "临高",
+      "lon": 109.69,
+      "lat": 19.91,
       "inundation": 1.4,
       "buildings": 557,
       "vegetation": 11.1
     },
     {
       "city": "儋州",
+      "lon": 109.58,
+      "lat": 19.52,
       "inundation": 0.8,
       "buildings": 327,
       "vegetation": 7.3
     },
     {
       "city": "其他",
+      "lon": 109.5,
+      "lat": 18.6,
       "inundation": 0.4,
       "buildings": 245,
       "vegetation": 4.9
@@ -118,5 +135,43 @@
     "landfallDate": "10-24",
     "low": 0.67
   },
-  "polygons": []
+  "polygons": [],
+  "track": [
+    {
+      "t": "10-22 08:00",
+      "lon": 125.5,
+      "lat": 15.2,
+      "grade": "热带风暴",
+      "wind": 18,
+      "pressure": 998,
+      "radius": 90
+    },
+    {
+      "t": "10-23 08:00",
+      "lon": 122.8,
+      "lat": 16.8,
+      "grade": "强热带风暴",
+      "wind": 28,
+      "pressure": 980,
+      "radius": 130
+    },
+    {
+      "t": "10-24 08:00",
+      "lon": 119.2,
+      "lat": 18.4,
+      "grade": "强热带风暴(登陆)",
+      "wind": 28,
+      "pressure": 980,
+      "radius": 140
+    },
+    {
+      "t": "10-25 08:00",
+      "lon": 115.0,
+      "lat": 20.0,
+      "grade": "热带风暴",
+      "wind": 20,
+      "pressure": 990,
+      "radius": 100
+    }
+  ]
 }

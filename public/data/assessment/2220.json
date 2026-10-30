@@ -6,6 +6,7 @@
   "pressure": 965,
   "date": "2022-10-18",
   "landfall": "广东湛江（严重影响海南）",
+  "landfallCity": "",
   "active": false,
   "statusText": "已完成灾后快速评估",
   "impactLevel": "重大",
@@ -31,48 +32,64 @@
   "cities": [
     {
       "city": "文昌",
+      "lon": 110.8,
+      "lat": 19.55,
       "inundation": 52.1,
       "buildings": 23129,
       "vegetation": 372.9
     },
     {
       "city": "海口",
+      "lon": 110.32,
+      "lat": 20.04,
       "inundation": 31.8,
       "buildings": 15970,
       "vegetation": 193.0
     },
     {
       "city": "琼海",
+      "lon": 110.47,
+      "lat": 19.26,
       "inundation": 9.5,
       "buildings": 3185,
       "vegetation": 70.6
     },
     {
       "city": "定安",
+      "lon": 110.35,
+      "lat": 19.68,
       "inundation": 9.1,
       "buildings": 2510,
       "vegetation": 89.6
     },
     {
       "city": "澄迈",
+      "lon": 110.0,
+      "lat": 19.74,
       "inundation": 9.0,
       "buildings": 3484,
       "vegetation": 61.5
     },
     {
       "city": "临高",
+      "lon": 109.69,
+      "lat": 19.91,
       "inundation": 5.3,
       "buildings": 1844,
       "vegetation": 36.6
     },
     {
       "city": "儋州",
+      "lon": 109.58,
+      "lat": 19.52,
       "inundation": 2.1,
       "buildings": 758,
       "vegetation": 16.8
     },
     {
       "city": "其他",
+      "lon": 109.5,
+      "lat": 18.6,
       "inundation": 0.5,
       "buildings": 261,
       "vegetation": 5.2
@@ -118,5 +135,52 @@
     "landfallDate": "10-19",
     "low": 0.61
   },
-  "polygons": []
+  "polygons": [],
+  "track": [
+    {
+      "t": "10-15 08:00",
+      "lon": 128.0,
+      "lat": 14.5,
+      "grade": "热带风暴",
+      "wind": 22,
+      "pressure": 992,
+      "radius": 110
+    },
+    {
+      "t": "10-16 08:00",
+      "lon": 125.2,
+      "lat": 16.3,
+      "grade": "强热带风暴",
+      "wind": 30,
+      "pressure": 980,
+      "radius": 140
+    },
+    {
+      "t": "10-17 08:00",
+      "lon": 121.8,
+      "lat": 18.5,
+      "grade": "台风",
+      "wind": 40,
+      "pressure": 965,
+      "radius": 190
+    },
+    {
+      "t": "10-18 08:00",
+      "lon": 118.5,
+      "lat": 20.8,
+      "grade": "强台风",
+      "wind": 45,
+      "pressure": 960,
+      "radius": 210
+    },
+    {
+      "t": "10-19 08:00",
+      "lon": 114.8,
+      "lat": 22.2,
+      "grade": "台风",
+      "wind": 35,
+      "pressure": 972,
+      "radius": 170
+    }
+  ]
 }

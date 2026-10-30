@@ -80,7 +80,16 @@
           <span class="map-tip">{{ mapTip }}</span>
         </div>
         <div class="map-container">
-          <BaseMap base-type="satellite" :stations="[]" :track="[]" :inundation="assessment.polygons" :legend="mapLegend" />
+          <BaseMap
+            base-type="satellite"
+            :stations="[]"
+            :track="assessment.track"
+            :cities="assessment.cities"
+            :inundation="assessment.polygons"
+            :focus-point="mapFocus"
+            :landfall-city="assessment.landfallCity"
+            :legend="mapLegend"
+          />
         </div>
       </div>
       <div class="tech-panel recover-panel">
@@ -176,7 +185,7 @@ const EMPTY = {
   vegetationDamage: 0,
   building: { none: 0, minor: 0, major: 0, destroyed: 0 },
   recovery: { power: 0, road: 0, ndvi: 0 },
-  cities: [], ndvi: { dates: [], before: [], after: [], landfallDate: '' }, polygons: []
+  cities: [], ndvi: { dates: [], before: [], after: [], landfallDate: '' }, polygons: [], track: []
 }
 const assessment = ref({ ...EMPTY })
 
@@ -188,12 +197,24 @@ const damagedBuildings = computed(
   () => (assessment.value.building.minor || 0) + (assessment.value.building.major || 0) + (assessment.value.building.destroyed || 0)
 )
 
-const mapLegend = [{ label: 'SAR 淹没区', color: '#ffb02e' }]
-const mapTip = computed(() =>
-  assessment.value.polygons.length
-    ? `登陆点 ${assessment.value.landfallLon?.toFixed?.(2) ?? ''}°E, ${assessment.value.landfallLat?.toFixed?.(2) ?? ''}°N`
-    : '该台风未逼近海南岛，无淹没区'
-)
+const mapLegend = [
+  { label: 'SAR 淹没区', color: '#ffb02e' },
+  { label: '受灾市县', color: '#ff5c5c' },
+  { label: '台风路径', color: '#ff7a45' }
+]
+// 登陆/影响锚点：地图上单独标记，并作为视野中心之一
+const mapFocus = computed(() => {
+  const a = assessment.value
+  if (a.landfallLon == null || a.landfallLat == null) return null
+  const lf = (a.track || []).find((p) => (p.grade || '').includes('登陆'))
+  return { lon: a.landfallLon, lat: a.landfallLat, t: lf ? lf.t : a.date }
+})
+const mapTip = computed(() => {
+  const a = assessment.value
+  if (!a.polygons.length) return '该台风未逼近海南岛，无淹没区'
+  const city = a.landfallCity ? `${a.landfallCity} · ` : ''
+  return `${city}锚点 ${a.landfallLon?.toFixed?.(2) ?? ''}°E, ${a.landfallLat?.toFixed?.(2) ?? ''}°N`
+})
 
 const powerColor = computed(() => {
   const v = assessment.value.recovery.power
@@ -348,7 +369,8 @@ async function loadFallback() {
     building: s.building,
     cities: c,
     ndvi: { ...n, landfallDate: '09-06' },
-    polygons: i
+    polygons: i,
+    track: []
   }
 }
 

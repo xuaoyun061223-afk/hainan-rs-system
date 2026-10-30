@@ -111,6 +111,39 @@ function impactAnchor(track, landfallText = '') {
   return { lon: REF_LANDFALL[0], lat: REF_LANDFALL[1], inside: false }
 }
 
+/** 登陆/影响市县名：优先取描述中的市县，否则取离锚点最近的市县（60 km 内） */
+function landfallCity(text, anchor) {
+  const t = String(text || '')
+  for (const city of Object.keys(CITY_ANCHORS)) {
+    if (t.includes(city)) return city
+  }
+  let bestCity = ''
+  let bestDist = 999
+  for (const [city, [lon, lat]] of Object.entries(CITY_ANCHORS)) {
+    const d = distKm(anchor.lon, anchor.lat, lon, lat)
+    if (d < bestDist) {
+      bestCity = city
+      bestDist = d
+    }
+  }
+  return bestDist <= 60 ? bestCity : ''
+}
+
+/** 前端地图需要的轨迹点（经纬度顺序为 [lon, lat]，与淹没区一致） */
+function trackPoints(track) {
+  return (track || [])
+    .filter((p) => p && p.lon !== undefined && p.lat !== undefined)
+    .map((p) => ({
+      t: String(p.t || ''),
+      lon: p.lon,
+      lat: p.lat,
+      grade: String(p.grade || ''),
+      wind: p.wind ?? null,
+      pressure: p.pressure ?? null,
+      radius: p.radius ?? null,
+    }))
+}
+
 /** 台风前后 NDVI 时序：以登陆日为界，前段正常值、后段骤降再逐步恢复 */
 function ndviSeries(r, landfallT, year) {
   let base = new Date(Date.UTC(year, 8, 6))
@@ -177,6 +210,8 @@ export function assessDamage(typhoon, track) {
   const veg = distribute(vegetation, wVeg, 1)
   const cities = CITY_BASE.map((c, i) => ({
     city: c.city,
+    lon: c.lon,
+    lat: c.lat,
     inundation: ins[i],
     buildings: Math.round(bld[i]),
     vegetation: veg[i],
@@ -198,6 +233,7 @@ export function assessDamage(typhoon, track) {
   const year = Number(String(typhoon.date || '').slice(0, 4)) || 2026
   const t = String(lf.t || '')
   const ndvi = ndviSeries(r, t.length >= 5 ? t.slice(0, 5) : '09-06', year)
+  const landfallText = String(typhoon.landfall || '')
 
   return {
     id: String(typhoon.id || ''),
@@ -206,7 +242,8 @@ export function assessDamage(typhoon, track) {
     wind,
     pressure: typhoon.pressure ?? null,
     date: typhoon.date || '',
-    landfall: typhoon.landfall || '未登陆',
+    landfall: landfallText || '未登陆',
+    landfallCity: landfallCity(landfallText, anchor),
     active,
     statusText: active ? '实时预评估（滚动更新）' : '已完成灾后快速评估',
     impactLevel: level,
@@ -223,5 +260,7 @@ export function assessDamage(typhoon, track) {
     cities,
     ndvi,
     polygons,
+    // 轨迹随评估一起返回，前端地图据此绘制完整路径、登陆点与风圈
+    track: trackPoints(points),
   }
 }

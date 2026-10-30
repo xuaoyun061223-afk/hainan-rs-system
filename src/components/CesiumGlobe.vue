@@ -5,6 +5,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import * as Cesium from 'cesium'
+import { loadHainanOutline } from '@/utils/hainanOutline'
 
 const props = defineProps({
   // 台风路径点：[{ lon, lat, grade, wind, pressure, radius, t }]
@@ -15,6 +16,8 @@ const props = defineProps({
   cameraView: { type: Array, default: () => [109.5, 19.0, 600000] },
   // 是否显示海南岛轮廓
   showHainanOutline: { type: Boolean, default: true },
+  // 登陆点所在市县（用于标注"登陆点 · 文昌"）
+  landfallCity: { type: String, default: '' },
   // 淹没区多边形
   inundation: { type: Array, default: () => [] }
 })
@@ -36,7 +39,8 @@ const gradeColor = (grade) => {
   return Cesium.Color.fromCssColorString('#ffd666')
 }
 
-const hainanOutline = [
+// 海南岛轮廓（[经度, 纬度]）：先给近似轮廓，真实海岸线公共 JSON 到达后替换
+let hainanOutline = [
   [110.62, 20.12], [110.98, 20.06], [111.07, 19.86], [110.86, 19.55],
   [110.98, 19.3], [110.62, 18.86], [110.32, 18.46], [110.06, 18.26],
   [109.76, 18.2], [109.4, 18.3], [109.06, 18.46], [108.7, 18.72],
@@ -94,7 +98,7 @@ function drawTrack() {
           outlineWidth: 2
         },
         label: {
-          text: '登陆点 · 文昌',
+          text: `登陆点${props.landfallCity ? ' · ' + props.landfallCity : ''}`,
           font: '13px sans-serif',
           fillColor: Cesium.Color.WHITE,
           outlineColor: Cesium.Color.BLACK,
@@ -151,15 +155,26 @@ function drawTrack() {
     }
   }
 
-  // 相机飞到路径中心
-  const center = props.track[Math.floor(props.track.length / 2)]
+  // 相机对准整条路径：按轨迹外接矩形给定视角高度，
+  // 避免原来「半程点 + 固定 500 km」只能看到路径一小段。
+  // 轨迹整体远离海南（最近点也在约 800 km 外）时，视野仍以海南岛为主，
+  // 否则为了装下远海轨迹会把海南岛缩成一个点。
+  const near = props.track.some((p) => {
+    const dx = (p.lon - 109.85) * Math.cos((((p.lat || 0) + 19.35) / 2) * Math.PI / 180) * 111
+    const dy = (p.lat - 19.35) * 111
+    return Math.sqrt(dx * dx + dy * dy) <= 800
+  })
+  const lons = props.track.map((p) => p.lon)
+  const lats = props.track.map((p) => p.lat)
+  const west = near ? Math.min(...lons) - 1.5 : 108.4
+  const east = near ? Math.max(...lons) + 1.5 : 111.3
+  const south = near ? Math.min(...lats) - 1.5 : 17.8
+  const north = near ? Math.max(...lats) + 1.5 : 20.3
   viewer.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(center.lon, center.lat - 1, 500000),
-    orientation: {
-      heading: Cesium.Math.toRadians(0),
-      pitch: Cesium.Math.toRadians(-45),
-      roll: 0
-    },
+    destination: Cesium.Rectangle.fromDegrees(
+      Math.min(west, 108.4), Math.min(south, 17.8),
+      Math.max(east, 111.3), Math.max(north, 20.3)
+    ),
     duration: 1.5
   })
   viewer.scene.requestRender()
@@ -167,7 +182,13 @@ function drawTrack() {
 
 function drawHainan() {
   if (!props.showHainanOutline) return
-  const positions = hainanOutline.map(([lon, lat]) =>
+  if (outlineEntity) {
+    viewer.entities.remove(outlineEntity)
+    outlineEntity = null
+  }
+  const pts = hainanOutline.filter((p) => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1]))
+  if (pts.length < 3) return
+  const positions = pts.map(([lon, lat]) =>
     Cesium.Cartesian3.fromDegrees(lon, lat, 0)
   )
   outlineEntity = viewer.entities.add({
@@ -259,6 +280,14 @@ onMounted(() => {
   drawHainan()
   drawTrack()
   drawInundation()
+
+  // 真实海岸线轮廓到达后重绘岛形
+  loadHainanOutline().then((pts) => {
+    if (!viewer) return
+    hainanOutline = pts
+    drawHainan()
+    viewer.scene.requestRender()
+  })
 
   // 相机操控调节：Cesium 默认为"自由球体"操控，惯性大、自由度多，
   // 拖动后镜头会继续滑行一段距离，稍一用力就转过头，很难停到目标位置。

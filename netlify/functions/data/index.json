@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-30T12:52:15.793489+08:00",
+  "generatedAt": "2026-10-30T13:12:56.212340+08:00",
   "source": "backend/database.py（本地 FastAPI 后端真实响应）",
   "routes": {
     "/api/hainan-outline": "hainan-outline.json",
