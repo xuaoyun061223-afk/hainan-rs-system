@@ -249,6 +249,31 @@ def sync_assessments(base_url, written):
         written.append("public/data/damage-targets.json")
 
 
+def trigger_netlify_build():
+    """
+    推送成功后主动调一次 Netlify Deploy Hook。
+    Netlify 自带的 GitHub 自动构建偶发不触发（只能到面板点 Trigger deploy），
+    这里在本地补一个「发布按钮」：配置了 hook 就自动构建，没配置只提示、不影响同步结果。
+    """
+    try:
+        from trigger_deploy import resolve_hook, trigger
+    except ImportError:
+        print("未找到 scripts/trigger_deploy.py，跳过自动构建。")
+        return
+    hook = resolve_hook()
+    if not hook:
+        print("未配置 Deploy Hook（NETLIFY_BUILD_HOOK 或 .netlify-hook-url），跳过自动构建。")
+        print("配置方法见 DEPLOY.md；也可在 Netlify 面板手动 Trigger deploy。")
+        return
+    print("触发 Netlify Deploy Hook …")
+    try:
+        status, body = trigger(hook)
+    except Exception as e:  # 网络/权限问题不应让已完成的推送变成失败
+        print(f"⚠️ Deploy Hook 触发失败：{e}")
+        return
+    print(f"✅ 已触发构建（HTTP {status}）：{body.strip()[:200]}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="同步后端真实数据到 Netlify 并推送上线")
     parser.add_argument("--no-push", action="store_true", help="只生成数据文件，不提交推送")
@@ -376,7 +401,8 @@ def main():
         sys.exit(f"git push 失败：{push.stderr.strip()}")
 
     print(f"✅ 已推送提交 {sha}")
-    print("Netlify 会自动重新部署，约 1-2 分钟后线上生效：")
+    trigger_netlify_build()
+    print("约 1-2 分钟后线上生效：")
     print("   https://dazzling-frangipane-0a0b3c.netlify.app")
 
 

@@ -1,0 +1,42 @@
+name: Trigger Netlify Deploy
+
+# 每次推送到 main 后，调用 Netlify Deploy Hook 触发一次线上构建。
+# 用途：Netlify 自带的 GitHub 自动构建偶发不触发（或需要手动 Trigger deploy）时，
+# 由 GitHub Actions 主动打这个「发布按钮」，保证推送即发布。
+#
+# 需要在仓库 Settings → Secrets and variables → Actions 中添加
+#   NETLIFY_BUILD_HOOK = <Netlify Deploy Hook 地址>
+# 未配置时本工作流只提示并跳过，不会失败。
+# 详细步骤见仓库根目录 DEPLOY.md。
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: netlify-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call Netlify build hook
+        env:
+          HOOK: ${{ secrets.NETLIFY_BUILD_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::warning::未配置 NETLIFY_BUILD_HOOK，跳过触发（见 DEPLOY.md）"
+            exit 0
+          fi
+          code=$(curl -sS -m 30 -o /tmp/hook.json -w '%{http_code}' \
+            -X POST -H 'Content-Type: application/json' -d '{}' "$HOOK")
+          cat /tmp/hook.json || true
+          echo ""
+          if [ "$code" != "200" ] && [ "$code" != "201" ]; then
+            echo "::error::Deploy Hook 调用失败：HTTP $code"
+            exit 1
+          fi
+          echo "已触发 Netlify 构建，约 1-2 分钟后线上生效"

@@ -10,3 +10,6 @@ __pycache__/
 
 # 临时截图/调试产物
 .shot2/
+
+# Netlify Deploy Hook 地址（私密链接，仅本地使用）
+.netlify-hook-url
