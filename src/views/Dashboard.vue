@@ -4,8 +4,23 @@
     <div class="stat-row">
       <StatCard label="近岸监测站点" :value="stats.stationCount" unit="个" icon="Location" color="#2f9bff" sub="覆盖环岛 6 个重点海湾" />
       <StatCard label="今日卫星过境" :value="stats.todayPasses" unit="次" icon="Position" color="#00e5ff" sub="光学 3 次 / SAR 1 次" />
-      <StatCard label="西北太平洋活跃台风" :value="stats.activeTyphoon" unit="个" icon="Guide" color="#2ee6a6" sub="当前无活跃台风" />
-      <StatCard label="生效预警信息" :value="stats.alertCount" unit="条" icon="Bell" color="#ff5c5c" sub="红色预警 2 条" />
+      <StatCard label="西北太平洋活跃台风" :value="stats.activeTyphoon" unit="个" icon="Guide" color="#2ee6a6" :sub="stats.activeTyphoon ? `当前 ${stats.activeTyphoon} 个活跃台风` : '当前无活跃台风'" />
+      <StatCard label="生效预警信息" :value="stats.alertCount" unit="条" icon="Bell" color="#ff5c5c" :sub="`实时生成 ${stats.alertCount} 条`" />
+    </div>
+
+    <!-- 数据时效与实况 -->
+    <div class="data-bar">
+      <span class="dot"></span>
+      <span>数据日期 <b>{{ stats.dataDate || '—' }}</b></span>
+      <span class="sep">·</span>
+      <span>更新于 {{ stats.updatedAt || '—' }}</span>
+      <span class="sep">·</span>
+      <span>每日 00:00 自动刷新</span>
+      <template v-if="liveWeather">
+        <span class="sep">|</span>
+        <span>近岸实况：气温 {{ liveWeather.temp }}℃ · 风速 {{ liveWeather.wind }} m/s · 当日降水 {{ liveWeather.precipSum }} mm</span>
+        <span v-if="stats.live && stats.live.seaTemperature">· 海表温度 {{ stats.live.seaTemperature.toFixed(1) }}℃</span>
+      </template>
     </div>
 
     <div class="main-row">
@@ -104,6 +119,8 @@ const alerts = ref([])
 const stats = ref({ stationCount: 0, todayPasses: 0, activeTyphoon: 0, alertCount: 0 })
 const weekly = ref({ days: [], optical: [], sar: [] })
 const waterGrade = ref([])
+
+const liveWeather = computed(() => (stats.value.live && stats.value.live.weather) || null)
 
 const mapLegend = [
   { label: '低风险站', color: '#2ee6a6' },
@@ -289,6 +306,29 @@ onMounted(async () => {
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
 }
+.data-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  background: rgba(0, 229, 255, 0.06);
+  border: 1px solid rgba(0, 229, 255, 0.22);
+  font-size: 11px;
+  color: #9db6d4;
+  line-height: 1.5;
+}
+.data-bar b { color: #00e5ff; font-weight: 600; }
+.data-bar .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #2ee6a6;
+  box-shadow: 0 0 6px #2ee6a6;
+  flex: none;
+}
+.data-bar .sep { color: #3d5a7a; }
 .main-row {
   flex: 1;
   display: grid;

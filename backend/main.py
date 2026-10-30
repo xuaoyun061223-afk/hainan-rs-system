@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from routers import ecology, typhoon, damage, satellite, common
+import live_data
 
 app = FastAPI(
     title="海南近海遥感监测系统 API",
@@ -33,7 +34,14 @@ app.include_router(satellite.router, prefix="/api/satellite", tags=["卫星数�
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "service": "hainan-rs-system", "version": "0.1.0"}
+    today = live_data.now_cn()
+    return {
+        "status": "ok",
+        "service": "hainan-rs-system",
+        "version": "0.1.0",
+        "dataDate": today["date"],
+        "refreshHint": "数据于每日 00:00（北京时间）自动更新",
+    }
 
 
 # 生产部署（Docker / 云平台）：若存在前端构建产物则一并托管，实现单端口对外服务

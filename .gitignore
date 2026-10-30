@@ -3,3 +3,7 @@ dist
 .DS_Store
 *.local
 .env
+
+# Python 编译缓存
+__pycache__/
+*.pyc

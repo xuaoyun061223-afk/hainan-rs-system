@@ -207,7 +207,7 @@ onMounted(() => {
     center: [19.35, 109.85],
     zoom: 8,
     minZoom: 6,
-    maxBounds: [[8.0, 100.0], [30.0, 132.0]],
+    maxBounds: [[-5.0, 90.0], [45.0, 180.0]],
     zoomControl: true,
     attributionControl: false
   })

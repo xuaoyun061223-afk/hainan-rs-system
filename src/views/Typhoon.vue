@@ -3,7 +3,7 @@
     <div class="main-row">
       <!-- 台风列表 -->
       <div class="tech-panel list-panel">
-        <div class="panel-title">影响海南历史台风</div>
+        <div class="panel-title">实时台风监测</div>
         <el-table
           :data="list"
           size="small"
@@ -12,14 +12,13 @@
           :row-class-name="rowClass"
           @row-click="onSelect"
         >
-          <el-table-column prop="id" label="编号" width="64" />
-          <el-table-column prop="name" label="名称" min-width="120" />
-          <el-table-column label="强度" width="92">
+          <el-table-column prop="id" label="编号" width="66" />
+          <el-table-column prop="name" label="名称" min-width="92" />
+          <el-table-column label="强度" width="76">
             <template #default="{ row }">
               <el-tag :type="gradeTag(row.grade)" size="small" effect="dark">{{ row.grade }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="date" label="日期" width="104" />
         </el-table>
       </div>
 
@@ -44,8 +43,8 @@
           </div>
           <el-descriptions :column="1" size="small" border class="detail-desc">
             <el-descriptions-item label="国际编号">{{ active.id }}</el-descriptions-item>
-            <el-descriptions-item label="登陆时间">{{ active.date }}</el-descriptions-item>
-            <el-descriptions-item label="登陆地点">{{ active.landfall }}</el-descriptions-item>
+            <el-descriptions-item label="生成时间">{{ active.date }}</el-descriptions-item>
+            <el-descriptions-item label="登陆情况">{{ active.landfall }}</el-descriptions-item>
             <el-descriptions-item label="最大风速">{{ active.wind }} m/s（{{ windLevel(active.wind) }}）</el-descriptions-item>
             <el-descriptions-item label="中心气压">{{ active.pressure }} hPa</el-descriptions-item>
           </el-descriptions>
@@ -183,6 +182,12 @@ const radiusOption = computed(() => ({
 
 onMounted(async () => {
   list.value = await fetchTyphoonList()
+  if (!list.value.length) return
+  // 实时台风编号与历史快照不同，若当前选中编号不在列表中则默认选中第一条，
+  // 保证列表始终有明确的高亮行，三维地图也有对应轨迹。
+  if (!list.value.some((t) => t.id === appStore.activeTyphoonId)) {
+    appStore.setActiveTyphoon(list.value[0].id)
+  }
   load(appStore.activeTyphoonId)
 })
 </script>
@@ -237,6 +242,23 @@ onMounted(async () => {
 .landfall-grid .danger { color: var(--danger); }
 .bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .chart-panel { padding: 12px 14px; }
-:deep(.current-row) { background: rgba(47, 155, 255, 0.15) !important; cursor: pointer; }
+/* Element Plus 的选中行底色由 --el-table-current-row-bg-color 控制，默认是浅色，
+   在深色科技风面板上会呈现突兀的白色整行。这里统一改为与面板协调的青色高亮。 */
+:deep(.el-table) {
+  --el-table-current-row-bg-color: rgba(0, 229, 255, 0.22);
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  --el-table-row-hover-bg-color: rgba(0, 229, 255, 0.08);
+}
+:deep(.el-table__body tr.current-row > td.el-table__cell) {
+  background-color: rgba(0, 229, 255, 0.22) !important;
+  color: #eaf4ff !important;
+}
+:deep(.el-table__body tr.current-row > td.el-table__cell:first-child) {
+  box-shadow: inset 3px 0 0 #00e5ff;
+}
+:deep(.el-table__body tr.current-row > td.el-table__cell:first-child) .cell {
+  color: #00e5ff;
+}
 :deep(.el-table__row) { cursor: pointer; }
 </style>
