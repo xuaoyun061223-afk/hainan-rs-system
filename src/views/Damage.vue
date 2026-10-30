@@ -54,7 +54,11 @@
           {{ assessment.statusText }}
         </el-tag>
         <el-tag size="small" type="info" effect="plain">风险等级 {{ assessment.impactLevel }}</el-tag>
-        <span class="data-note">
+        <span class="data-note switching-note" v-if="switching">
+          <el-icon class="is-loading" :size="13"><Loading /></el-icon>
+          评估计算中…
+        </span>
+        <span class="data-note" v-else>
           强度 {{ assessment.grade }} · 最大风速 {{ assessment.wind }} m/s · {{ assessment.landfall }}
         </span>
       </div>
@@ -145,7 +149,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Document } from '@element-plus/icons-vue'
+import { Document, Loading } from '@element-plus/icons-vue'
 import BaseMap from '@/components/BaseMap.vue'
 import ChartBox from '@/components/ChartBox.vue'
 import StatCard from '@/components/StatCard.vue'
@@ -155,10 +159,13 @@ import {
 } from '@/api'
 
 const loading = ref(true)
+const switching = ref(false)
 const targetLoading = ref(false)
 const targets = ref([])
 const selectedId = ref('2411')
 const route = useRoute()
+// 评估结果按台风编号缓存，切换回看过的台风时秒开
+const cache = new Map()
 
 // 评估结果默认结构与后端 /damage/assessment 保持一致，避免首帧模板取空报错
 const EMPTY = {
@@ -260,15 +267,28 @@ const ndviOption = computed(() => {
 
 async function loadAssessment(id) {
   if (!id) return
-  loading.value = true
+  // 同一台风评估结果是确定性的，切换回已看过的对象直接复用，无需再请求
+  const hit = cache.get(id)
+  if (hit) {
+    assessment.value = hit
+    return
+  }
+  const first = !assessment.value.id
+  // 首次加载用整页 loading；切换对象只在顶部提示，避免整页遮罩带来"卡很久"的观感
+  if (first) loading.value = true
+  else switching.value = true
   try {
     const data = await fetchDamageAssessment(id)
-    if (data) assessment.value = data
+    if (data) {
+      cache.set(id, data)
+      assessment.value = data
+    }
   } catch (e) {
     console.error('灾害评估加载失败', e)
     ElMessage.error('灾害评估数据加载失败，请稍后重试')
   } finally {
     loading.value = false
+    switching.value = false
   }
 }
 
@@ -360,6 +380,7 @@ onMounted(async () => {
 .opt-grade { float: right; margin-left: 16px; color: var(--text-sub); font-size: 12px; }
 .target-count { font-size: 12px; color: var(--text-sub); white-space: nowrap; }
 .data-note { font-size: 12px; color: var(--text-sub); }
+.switching-note { display: inline-flex; align-items: center; gap: 4px; color: #7fc4ff; }
 .map-tip { margin-left: auto; font-size: 11px; font-weight: 400; color: var(--text-sub); }
 .stat-row { flex: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .main-row {

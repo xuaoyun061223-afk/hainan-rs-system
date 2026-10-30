@@ -23,6 +23,10 @@ const TTL = {
 }
 
 const ZJ_API = 'https://typhoon.slt.zj.gov.cn/Api'
+// 台风接口对境外机房时常超时，给较短超时避免整条请求被拖到函数上限
+const ZJ_TIMEOUT = 4000
+// 外部接口失败后的“负缓存”时长，避免同一实例在短时间内反复等待超时
+const NEGATIVE_TTL = 60 * 1000
 const FORECAST_API =
   'https://api.open-meteo.com/v1/forecast?latitude=20.04&longitude=110.32' +
   '&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation,weather_code' +
@@ -49,17 +53,26 @@ async function fetchJson(url, timeout = 7000) {
 
 /**
  * 带缓存的取数：成功则刷新缓存；失败时返回上一次成功值（若有），否则返回 null。
- * 这样外部接口抖动不会直接导致页面数据缺失。
+ * 失败结果也做 60 秒负缓存，避免外部接口持续不可用时每次请求都等满超时。
+ * 这样外部接口抖动不会直接导致页面数据缺失，也不会拖慢整体响应。
  */
 async function cached(key, ttl, loader) {
   const hit = CACHE.get(key)
-  if (hit && Date.now() - hit.at < ttl) return hit.value
+  if (hit) {
+    const limit = hit.value === null ? NEGATIVE_TTL : ttl
+    if (Date.now() - hit.at < limit) return hit.value
+  }
   try {
     const value = await loader()
     CACHE.set(key, { at: Date.now(), value })
     return value
   } catch (e) {
-    if (hit) return hit.value
+    if (hit && hit.value !== null) {
+      // 上次成功值继续使用，并把计时刷新到当前时刻，TTL 内不再反复重试
+      hit.at = Date.now()
+      return hit.value
+    }
+    CACHE.set(key, { at: Date.now(), value: null })
     return null
   }
 }
@@ -114,7 +127,7 @@ export async function getSeaTemperature() {
 export async function getTyphoonList() {
   return cached('typhoonList', TTL.typhoonList, async () => {
     const year = nowCN().date.slice(0, 4)
-    const list = await fetchJson(`${ZJ_API}/TyphoonList/${year}`)
+    const list = await fetchJson(`${ZJ_API}/TyphoonList/${year}`, ZJ_TIMEOUT)
     if (!Array.isArray(list)) throw new Error('bad payload')
     return list
       .map((t) => ({
@@ -133,7 +146,7 @@ export async function getTyphoonList() {
 /** 单条台风详情（含逐 6 小时轨迹点） */
 export async function getTyphoonInfo(tfid) {
   return cached(`info:${tfid}`, TTL.typhoonInfo, async () => {
-    const j = await fetchJson(`${ZJ_API}/TyphoonInfo/${tfid}`)
+    const j = await fetchJson(`${ZJ_API}/TyphoonInfo/${tfid}`, ZJ_TIMEOUT)
     return j && j.tfid ? j : null
   })
 }

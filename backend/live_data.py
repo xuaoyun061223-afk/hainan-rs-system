@@ -33,6 +33,9 @@ _MARINE_API = (
 
 _CACHE: dict[str, tuple[float, object]] = {}
 _TTL = {"typhoon_list": 600, "typhoon_info": 1800, "weather": 900, "sst": 1800}
+# 台风接口偶发超时，超时与失败负缓存都短一些，避免拖慢接口
+_ZJ_TIMEOUT = 4.0
+_NEGATIVE_TTL = 60.0
 
 
 def _fetch_json(url: str, timeout: float = 7.0):
@@ -42,15 +45,22 @@ def _fetch_json(url: str, timeout: float = 7.0):
 
 
 def _cached(key: str, ttl: int, loader):
+    """带缓存的取数；失败时返回上次成功值，并对失败结果做 60 秒负缓存。"""
     hit = _CACHE.get(key)
-    if hit and time.time() - hit[0] < ttl:
-        return hit[1]
+    if hit:
+        limit = _NEGATIVE_TTL if hit[1] is None else ttl
+        if time.time() - hit[0] < limit:
+            return hit[1]
     try:
         value = loader()
         _CACHE[key] = (time.time(), value)
         return value
     except Exception:
-        return hit[1] if hit else None
+        if hit and hit[1] is not None:
+            _CACHE[key] = (time.time(), hit[1])
+            return hit[1]
+        _CACHE[key] = (time.time(), None)
+        return None
 
 
 def now_cn() -> dict:
@@ -113,7 +123,7 @@ def get_sea_temperature():
 def get_typhoon_list():
     def load():
         year = now_cn()["date"][:4]
-        data = _fetch_json(f"{_ZJ_API}/TyphoonList/{year}")
+        data = _fetch_json(f"{_ZJ_API}/TyphoonList/{year}", _ZJ_TIMEOUT)
         if not isinstance(data, list):
             raise ValueError("bad payload")
         return [
@@ -135,7 +145,7 @@ def get_typhoon_list():
 
 def get_typhoon_info(tfid: str):
     def load():
-        j = _fetch_json(f"{_ZJ_API}/TyphoonInfo/{tfid}")
+        j = _fetch_json(f"{_ZJ_API}/TyphoonInfo/{tfid}", _ZJ_TIMEOUT)
         return j if j and j.get("tfid") else None
 
     return _cached(f"info:{tfid}", _TTL["typhoon_info"], load)

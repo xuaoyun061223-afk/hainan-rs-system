@@ -69,21 +69,17 @@ function readHistoryList() {
   return readFile(routeIndex.routes['/api/typhoon/history']) || readFile(routeIndex.routes['/api/typhoon/list']) || []
 }
 
-/** 实时台风行：优先实时接口，失败时回退到本年度快照 */
-async function liveTargetRows(ctx, limit = 8) {
-  const live = ctx.typhoons.length
-    ? mapTyphoonList(ctx.typhoons, ctx.details, limit).map((t) => ({ ...t, source: '实时台风' }))
-    : []
-  return live.length ? live : readLiveSnapshot().slice(0, limit)
+/** 「现有台风」行：默认读本年度快照（毫秒级返回），快照缺失时才联网抓取 */
+async function liveTargetRows(limit = 8) {
+  const snapshot = readLiveSnapshot()
+  if (snapshot.length) return snapshot.slice(0, limit)
+  const ctx = await loadTyphoonContext()
+  return mapTyphoonList(ctx.typhoons, ctx.details, limit).map((t) => ({ ...t, source: '实时台风' }))
 }
 
-/** 为实时台风的编号批量获取详情（限制数量，避免一次请求打过多外部接口） */
-async function loadLiveContext() {
-  const [typhoons, weather, sea] = await Promise.all([
-    getTyphoonList(),
-    getWeather(),
-    getSeaTemperature(),
-  ])
+/** 只取台风列表与详情（不请求天气/海温，减少外部调用与等待时间） */
+async function loadTyphoonContext() {
+  const typhoons = await getTyphoonList()
   const list = Array.isArray(typhoons) ? typhoons : []
   // 与本地后端 _live_rows() 的取数规则保持一致：活跃台风优先 + 最近 8 条（最多 9 条详情），
   // 这样灾害评估下拉框中的「现有台风」与本地一致，不会因缺详情被过滤
@@ -99,7 +95,17 @@ async function loadLiveContext() {
       if (info) details[id] = info
     })
   )
-  return { typhoons: list, details, weather, sea }
+  return { typhoons: list, details }
+}
+
+/** 实时台风 + 近岸天气/海温（预警与概览需要完整上下文） */
+async function loadLiveContext() {
+  const [ctx, weather, sea] = await Promise.all([
+    loadTyphoonContext(),
+    getWeather(),
+    getSeaTemperature(),
+  ])
+  return { ...ctx, weather, sea }
 }
 
 export const handler = async (event) => {
@@ -147,7 +153,7 @@ export const handler = async (event) => {
   // 台风列表：优先返回本年度实时台风（活跃优先），实时源不可达时回退到本年度快照，
   // 再退一步用历史快照，保证「台风监测预警」始终有数据
   if (path === '/typhoon/list') {
-    const ctx = await loadLiveContext()
+    const ctx = await loadTyphoonContext()
     if (ctx.typhoons.length) {
       return jsonResponse(200, mapTyphoonList(ctx.typhoons, ctx.details))
     }
@@ -226,10 +232,9 @@ export const handler = async (event) => {
     if (data) return jsonResponse(200, extendMangrove(data))
   }
 
-  // 灾害评估对象：现有台风（实时优先 / 本年度快照兜底）+ 历史台风，供前端分组下拉选择
+  // 灾害评估对象：现有台风（本年度快照，毫秒级返回）+ 历史台风，供前端分组下拉选择
   if (path === '/damage/targets') {
-    const ctx = await loadLiveContext()
-    const live = await liveTargetRows(ctx)
+    const live = await liveTargetRows()
     const history = readHistoryList().map((t) => ({
       ...t,
       active: false,
@@ -240,22 +245,29 @@ export const handler = async (event) => {
     return jsonResponse(200, [...live, ...history.filter((t) => !seen.has(t.id))])
   }
 
-  // 单个台风的灾害快速评估：历史与现有台风同一套模型，默认评估 2411「摩羯」
+  // 单个台风的灾害快速评估：历史与现有台风同一套模型，默认评估 2411「摩羯」。
+  // 评估对象与轨迹都先查快照，切换对象无需联网，响应为毫秒级；快照缺失时才回退实时接口。
   const assessMatch = path.match(/^\/damage\/assessment(?:\/([^/]+))?$/)
   if (assessMatch) {
     const id = decodeURIComponent(assessMatch[1] || '2411')
-    const ctx = await loadLiveContext()
-    const liveRows = await liveTargetRows(ctx)
-    const row = readHistoryList().find((t) => t.id === id) || liveRows.find((t) => t.id === id)
-    if (!row) return jsonResponse(404, { error: 'Not Found', id })
+    let row = readHistoryList().find((t) => t.id === id) || readLiveSnapshot().find((t) => t.id === id)
+    let trackFile = routeIndex.typhoonTracks[id]
+    let track = trackFile ? readFile(trackFile) || [] : []
 
-    const trackFile = routeIndex.typhoonTracks[id]
-    const track = trackFile
-      ? readFile(trackFile) || []
-      : (() => {
-          const info = ctx.details[id]
-          return info ? mapTrackPoints(info) : []
-        })()
+    if (!row) {
+      const ctx = await loadTyphoonContext()
+      row = mapTyphoonList(ctx.typhoons, ctx.details, 9).find((t) => t.id === id)
+      if (row && !track.length) {
+        const info = ctx.details[id]
+        track = info ? mapTrackPoints(info) : []
+      }
+    } else if (!track.length) {
+      // 有评估对象但快照里没有轨迹：再试一次实时轨迹
+      const info = await getTyphoonInfo(id)
+      track = info ? mapTrackPoints(info) : []
+    }
+
+    if (!row) return jsonResponse(404, { error: 'Not Found', id })
     return jsonResponse(200, assessDamage(row, track))
   }
 
