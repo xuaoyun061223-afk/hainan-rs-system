@@ -11,6 +11,7 @@
           class="target-select"
           popper-class="damage-typhoon-popper"
           :loading="targetLoading"
+          @visible-change="onSelectVisible"
           @change="loadAssessment"
         >
           <el-option-group v-if="liveTargets.length" label="实时台风（活跃优先）">
@@ -277,19 +278,58 @@ async function loadAssessment(id) {
   // 首次加载用整页 loading；切换对象只在顶部提示，避免整页遮罩带来"卡很久"的观感
   if (first) loading.value = true
   else switching.value = true
+  const seq = ++reqSeq
   try {
     const data = await fetchDamageAssessment(id)
     if (data) {
       cache.set(id, data)
-      assessment.value = data
+      // 快速连点时可能后发的请求先返回，这里只认最后一次选择，避免展示错台风的评估
+      if (seq === reqSeq) assessment.value = data
     }
   } catch (e) {
     console.error('灾害评估加载失败', e)
-    ElMessage.error('灾害评估数据加载失败，请稍后重试')
+    if (seq === reqSeq) ElMessage.error('灾害评估数据加载失败，请稍后重试')
   } finally {
-    loading.value = false
-    switching.value = false
+    if (seq === reqSeq) {
+      loading.value = false
+      switching.value = false
+    }
   }
+}
+
+const pending = new Set()
+// 请求序号：丢弃过期响应，保证界面始终显示最后一次选中的台风
+let reqSeq = 0
+/**
+ * 预热其余评估对象：下拉框一展开就开始并行拉取（最多 3 个并发），
+ * 之后切换到这些台风时直接命中内存缓存，用户几乎感觉不到等待。
+ */
+async function prefetchTargets() {
+  const ids = targets.value
+    .map((t) => t.id)
+    .filter((id) => !cache.has(id) && !pending.has(id))
+  if (!ids.length) return
+  const queue = ids.slice()
+  const worker = async () => {
+    while (queue.length) {
+      const id = queue.shift()
+      pending.add(id)
+      try {
+        const data = await fetchDamageAssessment(id)
+        if (data) cache.set(id, data)
+      } catch (e) {
+        // 预热失败不影响主流程，用户真正切换时会重新请求
+      } finally {
+        pending.delete(id)
+      }
+    }
+  }
+  await Promise.all([worker(), worker(), worker()])
+}
+
+/** 下拉框展开时后台预热其它台风，选中后基本无等待 */
+function onSelectVisible(visible) {
+  if (visible) prefetchTargets()
 }
 
 /** 兼容旧接口：评估接口不可用时，仍能展示默认的摩羯快照评估 */
@@ -333,6 +373,8 @@ onMounted(async () => {
       selectedId.value = hasMoy ? '2411' : (firstActive ? firstActive.id : (targets.value[0]?.id || '2411'))
     }
     await loadAssessment(selectedId.value)
+    // 首屏渲染完成后再在后台预热其余对象，不阻塞当前页面
+    setTimeout(() => prefetchTargets(), 800)
   } catch (e) {
     console.error('Damage 数据加载失败', e)
     try {

@@ -38,10 +38,17 @@ function normalizePath(rawPath) {
   return path
 }
 
-function jsonResponse(statusCode, data) {
+// 灾害评估结果只与台风快照有关（同步脚本更新前不变化），可交给 Netlify 边缘缓存，
+// 第二次起直接命中 CDN，切换评估对象不再每次都走函数冷启动。
+const CACHEABLE = {
+  'Cache-Control': 'public, max-age=300',
+  'Netlify-CDN-Cache-Control': 'public, max-age=600, stale-while-revalidate=3600',
+}
+
+function jsonResponse(statusCode, data, extraHeaders) {
   return {
     statusCode,
-    headers: HEADERS,
+    headers: extraHeaders ? { ...HEADERS, ...extraHeaders } : HEADERS,
     body: JSON.stringify(data),
   }
 }
@@ -242,7 +249,7 @@ export const handler = async (event) => {
       source: '历史台风',
     }))
     const seen = new Set(live.map((t) => t.id))
-    return jsonResponse(200, [...live, ...history.filter((t) => !seen.has(t.id))])
+    return jsonResponse(200, [...live, ...history.filter((t) => !seen.has(t.id))], CACHEABLE)
   }
 
   // 单个台风的灾害快速评估：历史与现有台风同一套模型，默认评估 2411「摩羯」。
@@ -268,7 +275,7 @@ export const handler = async (event) => {
     }
 
     if (!row) return jsonResponse(404, { error: 'Not Found', id })
-    return jsonResponse(200, assessDamage(row, track))
+    return jsonResponse(200, assessDamage(row, track), CACHEABLE)
   }
 
   // 其余无参数端点：用索引精确匹配
