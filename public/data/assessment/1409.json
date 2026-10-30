@@ -1,0 +1,167 @@
+{
+  "id": "1409",
+  "name": "威马逊 RAMMASUN",
+  "grade": "超强台风",
+  "wind": 60.0,
+  "pressure": 910,
+  "date": "2014-07-18",
+  "landfall": "海南文昌",
+  "active": false,
+  "statusText": "已完成灾后快速评估",
+  "impactLevel": "特别重大",
+  "proximityKm": 103.4,
+  "landfallLon": 110.8,
+  "landfallLat": 19.62,
+  "affectedCities": 8,
+  "affectedPopulation": 269.1,
+  "economicLoss": 262.3,
+  "inundationArea": 291.0,
+  "vegetationDamage": 1755.7,
+  "building": {
+    "none": 393923,
+    "minor": 87104,
+    "major": 19688,
+    "destroyed": 5345
+  },
+  "recovery": {
+    "power": 19.0,
+    "road": 69.5,
+    "ndvi": 44.8
+  },
+  "cities": [
+    {
+      "city": "文昌",
+      "inundation": 166.0,
+      "buildings": 67891,
+      "vegetation": 984.2
+    },
+    {
+      "city": "海口",
+      "inundation": 35.6,
+      "buildings": 16472,
+      "vegetation": 178.9
+    },
+    {
+      "city": "琼海",
+      "inundation": 31.4,
+      "buildings": 9745,
+      "vegetation": 194.2
+    },
+    {
+      "city": "定安",
+      "inundation": 23.8,
+      "buildings": 6059,
+      "vegetation": 194.5
+    },
+    {
+      "city": "澄迈",
+      "inundation": 19.4,
+      "buildings": 6865,
+      "vegetation": 109.0
+    },
+    {
+      "city": "临高",
+      "inundation": 7.9,
+      "buildings": 2547,
+      "vegetation": 45.4
+    },
+    {
+      "city": "儋州",
+      "inundation": 5.3,
+      "buildings": 1739,
+      "vegetation": 34.7
+    },
+    {
+      "city": "其他",
+      "inundation": 1.6,
+      "buildings": 818,
+      "vegetation": 14.7
+    }
+  ],
+  "ndvi": {
+    "dates": [
+      "07-06",
+      "07-09",
+      "07-12",
+      "07-15",
+      "07-18",
+      "07-21",
+      "07-24",
+      "07-27",
+      "07-30",
+      "08-02"
+    ],
+    "before": [
+      0.78,
+      0.77,
+      0.78,
+      0.76,
+      0.75,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "after": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      0.52,
+      0.55,
+      0.58,
+      0.6,
+      0.63
+    ],
+    "landfallDate": "07-18",
+    "low": 0.52
+  },
+  "polygons": [
+    [
+      [
+        110.738,
+        19.993
+      ],
+      [
+        110.976,
+        20.034
+      ],
+      [
+        111.049,
+        19.827
+      ],
+      [
+        110.904,
+        19.62
+      ],
+      [
+        110.676,
+        19.682
+      ],
+      [
+        110.614,
+        19.858
+      ]
+    ],
+    [
+      [
+        110.179,
+        20.013
+      ],
+      [
+        110.427,
+        20.076
+      ],
+      [
+        110.469,
+        19.91
+      ],
+      [
+        110.22,
+        19.889
+      ]
+    ]
+  ]
+}

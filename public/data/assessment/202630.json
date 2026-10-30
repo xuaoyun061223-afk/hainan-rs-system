@@ -1,0 +1,122 @@
+{
+  "id": "202630",
+  "name": "蔷琵 CHAMPI",
+  "grade": "超强台风",
+  "wind": 68.0,
+  "pressure": 905.0,
+  "date": "2026-10-15",
+  "landfall": "未登陆",
+  "active": false,
+  "statusText": "已完成灾后快速评估",
+  "impactLevel": "较大",
+  "proximityKm": 1372.8,
+  "landfallLon": 122.0,
+  "landfallLat": 24.5,
+  "affectedCities": 7,
+  "affectedPopulation": 9.9,
+  "economicLoss": 10.9,
+  "inundationArea": 11.5,
+  "vegetationDamage": 66.0,
+  "building": {
+    "none": 501763,
+    "minor": 3273,
+    "major": 797,
+    "destroyed": 227
+  },
+  "recovery": {
+    "power": 96.9,
+    "road": 98.9,
+    "ndvi": 98.0
+  },
+  "cities": [
+    {
+      "city": "文昌",
+      "inundation": 5.4,
+      "buildings": 2086,
+      "vegetation": 31.0
+    },
+    {
+      "city": "海口",
+      "inundation": 2.8,
+      "buildings": 1218,
+      "vegetation": 13.6
+    },
+    {
+      "city": "琼海",
+      "inundation": 1.0,
+      "buildings": 295,
+      "vegetation": 6.0
+    },
+    {
+      "city": "澄迈",
+      "inundation": 0.8,
+      "buildings": 271,
+      "vegetation": 4.4
+    },
+    {
+      "city": "定安",
+      "inundation": 0.8,
+      "buildings": 205,
+      "vegetation": 6.7
+    },
+    {
+      "city": "临高",
+      "inundation": 0.5,
+      "buildings": 138,
+      "vegetation": 2.5
+    },
+    {
+      "city": "儋州",
+      "inundation": 0.2,
+      "buildings": 59,
+      "vegetation": 1.2
+    },
+    {
+      "city": "其他",
+      "inundation": 0.0,
+      "buildings": 25,
+      "vegetation": 0.5
+    }
+  ],
+  "ndvi": {
+    "dates": [
+      "10-12",
+      "10-15",
+      "10-18",
+      "10-21",
+      "10-24",
+      "10-27",
+      "10-30",
+      "11-02",
+      "11-05",
+      "11-08"
+    ],
+    "before": [
+      0.78,
+      0.77,
+      0.78,
+      0.76,
+      0.75,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "after": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      0.48,
+      0.51,
+      0.54,
+      0.57,
+      0.59
+    ],
+    "landfallDate": "10-24",
+    "low": 0.48
+  },
+  "polygons": []
+}

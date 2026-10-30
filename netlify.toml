@@ -4,6 +4,18 @@
   publish = "dist"
   functions = "netlify/functions"
 
+# 灾害评估：同步脚本已把结果预先生成为静态 JSON，这里让 CDN 直接返回（毫秒级），
+# 切换评估对象不再经过函数冷启动。静态文件缺失时（如新增台风尚未同步）自动落到下面的 /api/* 函数。
+[[redirects]]
+  from = "/api/damage/targets"
+  to = "/data/damage-targets.json"
+  status = 200
+
+[[redirects]]
+  from = "/api/damage/assessment/:id"
+  to = "/data/assessment/:id.json"
+  status = 200
+
 # API 路由重写：所有 /api/* 请求转发到 Netlify Functions
 [[redirects]]
   from = "/api/*"

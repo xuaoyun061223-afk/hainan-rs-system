@@ -1,0 +1,122 @@
+{
+  "id": "202629",
+  "name": "小熊 KOGUMA",
+  "grade": "超强台风",
+  "wind": 58.0,
+  "pressure": 925.0,
+  "date": "2026-10-05",
+  "landfall": "未登陆",
+  "active": false,
+  "statusText": "已完成灾后快速评估",
+  "impactLevel": "一般",
+  "proximityKm": 3910.4,
+  "landfallLon": 147.3,
+  "landfallLat": 26.6,
+  "affectedCities": 7,
+  "affectedPopulation": 7.6,
+  "economicLoss": 7.2,
+  "inundationArea": 8.1,
+  "vegetationDamage": 49.6,
+  "building": {
+    "none": 502913,
+    "minor": 2458,
+    "major": 544,
+    "destroyed": 145
+  },
+  "recovery": {
+    "power": 97.7,
+    "road": 99.1,
+    "ndvi": 98.4
+  },
+  "cities": [
+    {
+      "city": "文昌",
+      "inundation": 4.1,
+      "buildings": 1648,
+      "vegetation": 25.0
+    },
+    {
+      "city": "海口",
+      "inundation": 1.7,
+      "buildings": 782,
+      "vegetation": 8.9
+    },
+    {
+      "city": "琼海",
+      "inundation": 0.8,
+      "buildings": 244,
+      "vegetation": 5.1
+    },
+    {
+      "city": "定安",
+      "inundation": 0.6,
+      "buildings": 145,
+      "vegetation": 4.9
+    },
+    {
+      "city": "澄迈",
+      "inundation": 0.5,
+      "buildings": 181,
+      "vegetation": 3.0
+    },
+    {
+      "city": "临高",
+      "inundation": 0.3,
+      "buildings": 85,
+      "vegetation": 1.6
+    },
+    {
+      "city": "儋州",
+      "inundation": 0.1,
+      "buildings": 40,
+      "vegetation": 0.8
+    },
+    {
+      "city": "其他",
+      "inundation": 0.0,
+      "buildings": 22,
+      "vegetation": 0.4
+    }
+  ],
+  "ndvi": {
+    "dates": [
+      "09-29",
+      "10-02",
+      "10-05",
+      "10-08",
+      "10-11",
+      "10-14",
+      "10-17",
+      "10-20",
+      "10-23",
+      "10-26"
+    ],
+    "before": [
+      0.78,
+      0.77,
+      0.78,
+      0.76,
+      0.75,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "after": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      0.53,
+      0.56,
+      0.59,
+      0.61,
+      0.64
+    ],
+    "landfallDate": "10-11",
+    "low": 0.53
+  },
+  "polygons": []
+}

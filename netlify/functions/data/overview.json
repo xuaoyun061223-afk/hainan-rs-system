@@ -6,21 +6,21 @@
   "totalScenes": 29420,
   "coverage": 97,
   "dataDate": "2026-10-30",
-  "updatedAt": "2026-10-30 11:08",
+  "updatedAt": "2026-10-30 12:52",
   "nextRefreshAt": "2026-10-30 24:00",
   "live": {
     "ready": true,
     "weather": {
-      "temp": 29.2,
-      "humidity": 66.0,
-      "wind": 12.7,
+      "temp": 29.5,
+      "humidity": 64.0,
+      "wind": 14.5,
       "precipitation": 0.0,
       "tempMax": 29.6,
       "tempMin": 23.7,
       "precipSum": 1.6,
       "windMax": 15.8,
-      "observedAt": "2026-10-30 11:08"
+      "observedAt": "2026-10-30 12:52"
     },
-    "seaTemperature": 28.5
+    "seaTemperature": 28.6
   }
 }

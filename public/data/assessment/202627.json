@@ -1,0 +1,122 @@
+{
+  "id": "202627",
+  "name": "彩云 CHOI-WAN",
+  "grade": "超强台风",
+  "wind": 65.0,
+  "pressure": 910.0,
+  "date": "2026-10-01",
+  "landfall": "未登陆",
+  "active": false,
+  "statusText": "已完成灾后快速评估",
+  "impactLevel": "一般",
+  "proximityKm": 3659.4,
+  "landfallLon": 144.5,
+  "landfallLat": 17.5,
+  "affectedCities": 8,
+  "affectedPopulation": 9.2,
+  "economicLoss": 9.7,
+  "inundationArea": 10.4,
+  "vegetationDamage": 60.8,
+  "building": {
+    "none": 502127,
+    "minor": 3018,
+    "major": 715,
+    "destroyed": 200
+  },
+  "recovery": {
+    "power": 97.1,
+    "road": 99.0,
+    "ndvi": 98.1
+  },
+  "cities": [
+    {
+      "city": "文昌",
+      "inundation": 5.7,
+      "buildings": 2269,
+      "vegetation": 33.0
+    },
+    {
+      "city": "海口",
+      "inundation": 1.6,
+      "buildings": 712,
+      "vegetation": 7.8
+    },
+    {
+      "city": "琼海",
+      "inundation": 1.3,
+      "buildings": 400,
+      "vegetation": 8.0
+    },
+    {
+      "city": "定安",
+      "inundation": 0.7,
+      "buildings": 173,
+      "vegetation": 5.6
+    },
+    {
+      "city": "澄迈",
+      "inundation": 0.6,
+      "buildings": 199,
+      "vegetation": 3.2
+    },
+    {
+      "city": "临高",
+      "inundation": 0.3,
+      "buildings": 80,
+      "vegetation": 1.4
+    },
+    {
+      "city": "儋州",
+      "inundation": 0.2,
+      "buildings": 49,
+      "vegetation": 1.0
+    },
+    {
+      "city": "其他",
+      "inundation": 0.1,
+      "buildings": 51,
+      "vegetation": 0.9
+    }
+  ],
+  "ndvi": {
+    "dates": [
+      "09-20",
+      "09-23",
+      "09-26",
+      "09-29",
+      "10-02",
+      "10-05",
+      "10-08",
+      "10-11",
+      "10-14",
+      "10-17"
+    ],
+    "before": [
+      0.78,
+      0.77,
+      0.78,
+      0.76,
+      0.75,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "after": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      0.5,
+      0.52,
+      0.55,
+      0.58,
+      0.61
+    ],
+    "landfallDate": "10-02",
+    "low": 0.5
+  },
+  "polygons": []
+}

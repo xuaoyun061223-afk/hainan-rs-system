@@ -34,6 +34,10 @@ BACKEND_DIR = ROOT / "backend"
 FUNCTIONS_DIR = ROOT / "netlify" / "functions"
 DATA_DIR = FUNCTIONS_DIR / "data"
 DATA_JS = FUNCTIONS_DIR / "data.js"
+# 灾害评估结果是「快照 + 模型」的确定性输出，直接生成为静态文件走 CDN，
+# 前端切换评估对象时无需经过函数冷启动（netlify.toml 里把 /api/damage/* 指向这里）。
+STATIC_DATA_DIR = ROOT / "public" / "data"
+ASSESS_DIR = STATIC_DATA_DIR / "assessment"
 
 # 无参数端点：接口路径 -> 数据文件名（与 netlify/functions/data/index.json 保持一致）
 BASE_ENDPOINTS = [
@@ -219,6 +223,32 @@ def sync_typhoons(base_url, written):
     return history, live, tracks
 
 
+def sync_assessments(base_url, written):
+    """把每个评估对象的灾害评估结果预先算成静态 JSON，线上由 CDN 直接返回。
+
+    /api/damage/assessment/{id} 的计算只依赖台风快照与轨迹，同步时算一次即可；
+    静态文件响应在几十毫秒内，切换评估对象不再受函数冷启动影响。
+    """
+    ASSESS_DIR.mkdir(parents=True, exist_ok=True)
+    targets = fetch_json(base_url, "/api/damage/targets")
+    ids = [str(t["id"]) for t in targets if t.get("id")]
+    print(f"生成 {len(ids)} 个台风的静态灾害评估结果…")
+    for tid in ids:
+        try:
+            data = fetch_json(base_url, f"/api/damage/assessment/{urllib.parse.quote(tid)}")
+        except Exception as e:
+            print(f"  跳过评估 {tid}：{e}")
+            continue
+        if write_json(ASSESS_DIR / f"{tid}.json", data):
+            written.append(f"public/data/assessment/{tid}.json")
+    # 清理已不在列表中的旧台风，避免线上还能打开过期评估
+    for stale in {p.stem for p in ASSESS_DIR.glob("*.json")} - set(ids):
+        (ASSESS_DIR / f"{stale}.json").unlink(missing_ok=True)
+        print(f"  移除过期评估 {stale}.json")
+    if write_json(STATIC_DATA_DIR / "damage-targets.json", targets):
+        written.append("public/data/damage-targets.json")
+
+
 def main():
     parser = argparse.ArgumentParser(description="同步后端真实数据到 Netlify 并推送上线")
     parser.add_argument("--no-push", action="store_true", help="只生成数据文件，不提交推送")
@@ -278,6 +308,9 @@ def main():
         # 3. 台风：历史台风 + 本年度实时台风（含各自轨迹）
         history, live, tracks = sync_typhoons(base_url, written)
 
+        # 3.1 灾害评估对象与结果（静态文件，走 CDN 直出）
+        sync_assessments(base_url, written)
+
         # 4. 索引
         index = {
             "generatedAt": datetime.now().astimezone().isoformat(),
@@ -318,7 +351,7 @@ def main():
         return
 
     print("提交并推送…")
-    paths = ["netlify/functions/data", "netlify/functions/data.js"]
+    paths = ["netlify/functions/data", "netlify/functions/data.js", "public/data"]
     if not git_add_with_retry(paths):
         sys.exit("git add 失败，请手动执行 git add netlify/functions/data netlify/functions/data.js")
 
