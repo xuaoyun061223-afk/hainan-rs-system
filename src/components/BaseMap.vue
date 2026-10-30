@@ -94,7 +94,9 @@ function drawHainan() {
     weight: 1.6,
     opacity: 0.9,
     fillColor: '#123f73',
-    fillOpacity: 0.35
+    // 只做很淡的提亮，不能压住底图海岸线与道路，否则整块陆地会糊成一团
+    fillOpacity: 0.12,
+    interactive: false
   }).addTo(dataLayer)
 }
 

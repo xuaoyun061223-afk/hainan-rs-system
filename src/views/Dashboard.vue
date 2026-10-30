@@ -122,13 +122,19 @@ const waterGrade = ref([])
 
 const liveWeather = computed(() => (stats.value.live && stats.value.live.weather) || null)
 
-const mapLegend = [
+const mapLegend = computed(() => [
   { label: '低风险站', color: '#2ee6a6' },
   { label: '中风险站', color: '#ffb02e' },
   { label: '高风险站', color: '#ff5c5c' },
-  { label: '台风路径', color: '#cf1322' },
-  { label: '风圈', color: '#ff5c5c' }
-]
+  // 一张图默认不显示台风，只有点击预警时间后才出现路径与风圈，
+  // 图例跟着数据走，避免地图上没有任何轨迹却挂着「台风路径」色块
+  ...(track.value.length
+    ? [
+      { label: '台风路径', color: '#cf1322' },
+      { label: '风圈', color: '#ff5c5c' }
+    ]
+    : [])
+])
 
 const axisStyle = {
   axisLine: { lineStyle: { color: '#2b4a76' } },
