@@ -46,6 +46,9 @@
             </el-option>
           </el-option-group>
         </el-select>
+        <span class="target-count" v-if="targets.length">
+          现有 {{ liveTargets.length + yearTargets.length }} 个 · 历史 {{ historyTargets.length }} 个
+        </span>
         <el-tag size="small" :type="assessment.active ? 'warning' : 'danger'" effect="dark">
           {{ assessment.statusText }}
         </el-tag>
@@ -351,6 +354,7 @@ onMounted(async () => {
 }
 .opt-name { color: #eaf4ff; }
 .opt-grade { float: right; margin-left: 16px; color: var(--text-sub); font-size: 12px; }
+.target-count { font-size: 12px; color: var(--text-sub); white-space: nowrap; }
 .data-note { font-size: 12px; color: var(--text-sub); }
 .map-tip { margin-left: auto; font-size: 11px; font-weight: 400; color: var(--text-sub); }
 .stat-row { flex: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
