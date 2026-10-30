@@ -10,6 +10,9 @@
   "active": false,
   "statusText": "已完成灾后快速评估",
   "impactLevel": "特别重大",
+  "landed": true,
+  "assessmentOnly": false,
+  "forecast": null,
   "proximityKm": 103.4,
   "landfallLon": 110.8,
   "landfallLat": 19.62,
@@ -19,10 +22,10 @@
   "inundationArea": 291.0,
   "vegetationDamage": 1755.7,
   "building": {
-    "none": 393923,
+    "none": 393922,
     "minor": 87104,
     "major": 19688,
-    "destroyed": 5345
+    "destroyed": 5346
   },
   "recovery": {
     "power": 19.0,
@@ -35,7 +38,7 @@
       "lon": 110.8,
       "lat": 19.55,
       "inundation": 166.0,
-      "buildings": 67891,
+      "buildings": 67892,
       "vegetation": 984.2
     },
     {
@@ -43,7 +46,7 @@
       "lon": 110.32,
       "lat": 20.04,
       "inundation": 35.6,
-      "buildings": 16472,
+      "buildings": 16473,
       "vegetation": 178.9
     },
     {
@@ -51,7 +54,7 @@
       "lon": 110.47,
       "lat": 19.26,
       "inundation": 31.4,
-      "buildings": 9745,
+      "buildings": 9746,
       "vegetation": 194.2
     },
     {
@@ -59,7 +62,7 @@
       "lon": 110.35,
       "lat": 19.68,
       "inundation": 23.8,
-      "buildings": 6059,
+      "buildings": 6060,
       "vegetation": 194.5
     },
     {

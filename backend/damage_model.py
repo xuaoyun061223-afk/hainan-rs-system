@@ -62,6 +62,11 @@ def _rnd(x: float, digits: int = 1) -> float:
     return math.floor(x * m + 0.5) / m
 
 
+def _round_int(x: float) -> int:
+    """先按 1 位小数取整，再按 .5 进位转成整数——与 JS 的 Math.round(rnd(x, 1)) 完全一致"""
+    return int(math.floor(_rnd(x, 1) + 0.5))
+
+
 def _clamp(x: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, x))
 
@@ -81,6 +86,27 @@ def _landfall_point(track):
         if "登陆" in str(p.get("grade") or ""):
             return p
     return min(track, key=lambda p: _dist_km(HAINAN_CENTER[0], HAINAN_CENTER[1], p["lon"], p["lat"]))
+
+
+def _landed(track, landfall_text: str) -> bool:
+    """
+    是否已经登陆：轨迹里出现「登陆」标注，或文字描述给出了登陆地。
+    只有「未登陆」「海南近海」这类没有登陆事实的描述才算未登陆——
+    尚未登陆的台风（含预报路径、远海转向）只做风险评估，不生成实况灾情数字。
+    """
+    for p in track or []:
+        if "登陆" in str(p.get("grade") or ""):
+            return True
+    text = (landfall_text or "").strip()
+    if not text or "未登陆" in text:
+        return False
+    # 「近海」「掠过」只是靠近，不等于登陆
+    return not ("近海" in text or "掠过" in text)
+
+
+def _impact_level(economic: float) -> str:
+    """按经济损失量级给出影响等级"""
+    return "特别重大" if economic >= 100 else "重大" if economic >= 50 else "较大" if economic >= 10 else "一般"
 
 
 def _proximity(track, landfall_text: str = "") -> tuple[float, float]:
@@ -157,8 +183,11 @@ def _track_points(track) -> list:
     return out
 
 
-def _ndvi_series(r: float, landfall_t: str, year: int) -> dict:
-    """台风前后 NDVI 时序：以登陆日为界，前段正常值、后段骤降再逐步恢复"""
+def _ndvi_series(r: float, landfall_t: str, year: int, impact: bool = True) -> dict:
+    """
+    台风前后 NDVI 时序：以登陆日为界，前段正常值、后段骤降再逐步恢复。
+    impact=False（台风尚未登陆）时只给基线序列，表示「尚无过境影响」。
+    """
     try:
         base = datetime(year, int(landfall_t[0:2]), int(landfall_t[3:5]), tzinfo=timezone.utc)
     except (ValueError, TypeError):
@@ -168,6 +197,14 @@ def _ndvi_series(r: float, landfall_t: str, year: int) -> dict:
     dates = [(base + timedelta(days=o)).strftime("%m-%d") for o in offsets]
 
     before = [0.78, 0.77, 0.78, 0.76, 0.75] + [None] * 5
+    if not impact:
+        return {
+            "dates": dates,
+            "before": before,
+            "after": [None] * 5,
+            "landfallDate": "",
+            "low": None,
+        }
     low = _clamp(0.78 - 0.27 * (r ** 1.1), 0.25, 0.75)
     after_vals = [_rnd(low + 0.028 * i, 2) for i in range(5)]
     after = [None] * 5 + after_vals
@@ -200,9 +237,9 @@ def assess(typhoon: dict, track: list) -> dict:
     economic = _rnd(285.6 * (r ** 2.6) * p, 1)
     population = _rnd(283.6 * (r ** 1.6) * p, 1)
 
-    destroyed = int(_rnd(5860 * (r ** 2.8) * p, 1))
-    major = int(_rnd(21300 * (r ** 2.4) * p, 1))
-    minor = int(_rnd(92400 * (r ** 1.8) * p, 1))
+    destroyed = _round_int(5860 * (r ** 2.8) * p)
+    major = _round_int(21300 * (r ** 2.4) * p)
+    minor = _round_int(92400 * (r ** 1.8) * p)
     none = max(0, TOTAL_BUILDINGS - destroyed - major - minor)
 
     power = _rnd(_clamp(100 - 86.5 * (r ** 2) * p, 3, 100), 1)
@@ -246,14 +283,40 @@ def assess(typhoon: dict, track: list) -> dict:
                 for x, y in ring
             ])
 
-    level = "特别重大" if economic >= 100 else "重大" if economic >= 50 else "较大" if economic >= 10 else "一般"
     active = bool(typhoon.get("active"))
-    status_text = "实时预评估（滚动更新）" if active else "已完成灾后快速评估"
+    landfall_text = str(typhoon.get("landfall") or "")
+    landed = _landed(track, landfall_text)
 
     year = int(str(typhoon.get("date") or "")[:4] or 2026)
     t = str(lf.get("t") or "")
-    ndvi = _ndvi_series(r, t[0:5] if len(t) >= 5 else "09-06", year)
-    landfall_text = str(typhoon.get("landfall") or "")
+    ndvi = _ndvi_series(r, t[0:5] if len(t) >= 5 else "09-06", year, impact=landed)
+
+    if landed:
+        level = _impact_level(economic)
+        status_text = "实时预评估（滚动更新）" if active else "已完成灾后快速评估"
+        landfall_city = _landfall_city(landfall_text, anchor)
+        forecast = None
+    else:
+        # 尚未登陆（含海域活动、预报路径）：不给实况灾情数字，避免用推测值假装成观测结果。
+        # 模型外推的潜在影响单独放在 forecast 里，仅作风险评估参考。
+        forecast = {
+            "inundationArea": inundation,
+            "vegetationDamage": vegetation,
+            "economicLoss": economic,
+            "affectedPopulation": population,
+            "damagedBuildings": minor + major + destroyed,
+            "impactLevel": _impact_level(economic),
+        }
+        level = forecast["impactLevel"]
+        # 活跃台风用「尚未登陆」，已结束的用「未登陆」，两种都只作风险评估
+        status_text = ("尚未登陆 · 仅作风险评估" if active else "未登陆 · 仅作风险评估")
+        landfall_city = ""
+        inundation = vegetation = economic = population = 0.0
+        destroyed = major = minor = 0
+        none = TOTAL_BUILDINGS
+        power = road = ndvi_recover = 100.0
+        cities = []
+        polygons = []
 
     return {
         "id": str(typhoon.get("id") or ""),
@@ -263,10 +326,14 @@ def assess(typhoon: dict, track: list) -> dict:
         "pressure": typhoon.get("pressure"),
         "date": typhoon.get("date"),
         "landfall": landfall_text or "未登陆",
-        "landfallCity": _landfall_city(landfall_text, anchor),
+        "landfallCity": landfall_city,
         "active": active,
         "statusText": status_text,
         "impactLevel": level,
+        # landed=False 时前端只展示路径与风险提示，灾情指标一律显示「—」
+        "landed": landed,
+        "assessmentOnly": not landed,
+        "forecast": forecast,
         "proximityKm": dmin,
         "landfallLon": anchor["lon"],
         "landfallLat": anchor["lat"],

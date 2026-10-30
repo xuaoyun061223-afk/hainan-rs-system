@@ -49,6 +49,7 @@ let hainanOutline = [
 ]
 
 function clearTrack() {
+  if (!viewer) return
   trackEntities.forEach((e) => viewer.entities.remove(e))
   trackEntities = []
   if (landfallEntity) {
@@ -58,7 +59,7 @@ function clearTrack() {
 }
 
 function drawTrack() {
-  if (!props.track.length) return
+  if (!viewer || !props.track.length) return
   clearTrack()
 
   const positions = props.track.map((p) =>
@@ -155,25 +156,34 @@ function drawTrack() {
     }
   }
 
-  // 相机对准整条路径：按轨迹外接矩形给定视角高度，
-  // 避免原来「半程点 + 固定 500 km」只能看到路径一小段。
-  // 轨迹整体远离海南（最近点也在约 800 km 外）时，视野仍以海南岛为主，
-  // 否则为了装下远海轨迹会把海南岛缩成一个点。
-  const near = props.track.some((p) => {
-    const dx = (p.lon - 109.85) * Math.cos((((p.lat || 0) + 19.35) / 2) * Math.PI / 180) * 111
-    const dy = (p.lat - 19.35) * 111
-    return Math.sqrt(dx * dx + dy * dy) <= 800
-  })
-  const lons = props.track.map((p) => p.lon)
-  const lats = props.track.map((p) => p.lat)
-  const west = near ? Math.min(...lons) - 1.5 : 108.4
-  const east = near ? Math.max(...lons) + 1.5 : 111.3
-  const south = near ? Math.min(...lats) - 1.5 : 17.8
-  const north = near ? Math.max(...lats) + 1.5 : 20.3
+  // 相机取景：整条台风路径 ∪ 海南岛范围，两者同时入画。
+  // 之前只取「离海南 800 km 内的那一段」，点开远海转向的台风时看不到完整路径；
+  // 现在改为「轨迹外接矩形与海南岛并集 + 边距」，地图会相应拉远，
+  // 台风走向（含远海段）与海南岛都能一眼看到。
+  const HAINAN_RECT = [108.35, 17.75, 111.35, 20.3] // [西, 南, 东, 北]
+  const lons = props.track.map((p) => p.lon).filter((v) => Number.isFinite(v))
+  const lats = props.track.map((p) => p.lat).filter((v) => Number.isFinite(v))
+  let west = lons.length ? Math.min(HAINAN_RECT[0], ...lons) : HAINAN_RECT[0]
+  let south = lats.length ? Math.min(HAINAN_RECT[1], ...lats) : HAINAN_RECT[1]
+  let east = lons.length ? Math.max(HAINAN_RECT[2], ...lons) : HAINAN_RECT[2]
+  let north = lats.length ? Math.max(HAINAN_RECT[3], ...lats) : HAINAN_RECT[3]
+  // 单点/极短轨迹时给出最小视野，避免相机贴到地面
+  if (east - west < 4) {
+    const c = (west + east) / 2
+    west = c - 2
+    east = c + 2
+  }
+  if (north - south < 3) {
+    const c = (south + north) / 2
+    south = c - 1.5
+    north = c + 1.5
+  }
+  // 四周再留 8% 边距，标签与风圈不会被画到画面外
+  const padLon = Math.min(4, (east - west) * 0.08)
+  const padLat = Math.min(3, (north - south) * 0.08)
   viewer.camera.flyTo({
     destination: Cesium.Rectangle.fromDegrees(
-      Math.min(west, 108.4), Math.min(south, 17.8),
-      Math.max(east, 111.3), Math.max(north, 20.3)
+      west - padLon, south - padLat, east + padLon, north + padLat
     ),
     duration: 1.5
   })
@@ -181,7 +191,7 @@ function drawTrack() {
 }
 
 function drawHainan() {
-  if (!props.showHainanOutline) return
+  if (!viewer || !props.showHainanOutline) return
   if (outlineEntity) {
     viewer.entities.remove(outlineEntity)
     outlineEntity = null
@@ -203,6 +213,7 @@ function drawHainan() {
 }
 
 function drawInundation() {
+  if (!viewer) return
   inundationEntities.forEach((e) => viewer.entities.remove(e))
   inundationEntities = []
   if (!props.inundation.length) return
@@ -224,7 +235,8 @@ function drawInundation() {
 watch(() => props.track, drawTrack, { deep: true })
 watch(() => props.inundation, drawInundation, { deep: true })
 
-onMounted(() => {
+/** 创建 Viewer 并挂上底图、岛形、轨迹与相机控制 */
+function initViewer() {
   // 不使用 Cesium Ion 默认服务，避免 token 验证失败
   Cesium.Ion.defaultAccessToken = ''
 
@@ -338,9 +350,33 @@ onMounted(() => {
     if (viewer && !viewer.isDestroyed()) viewer.resize()
   })
   resizeObserver.observe(containerEl.value)
+}
+
+let pendingObserver = null
+
+onMounted(() => {
+  // 面板刚挂载时布局可能还没完成（宽高为 0），Cesium 在 0 宽画布上会抛
+  // "Expected width to be greater than 0" 并停止渲染，因此等容器真正有尺寸再建 Viewer
+  if (containerEl.value.clientWidth > 0 && containerEl.value.clientHeight > 0) {
+    initViewer()
+    return
+  }
+  pendingObserver = new ResizeObserver(() => {
+    if (!containerEl.value) return
+    if (containerEl.value.clientWidth > 0 && containerEl.value.clientHeight > 0) {
+      pendingObserver.disconnect()
+      pendingObserver = null
+      initViewer()
+    }
+  })
+  pendingObserver.observe(containerEl.value)
 })
 
 onBeforeUnmount(() => {
+  if (pendingObserver) {
+    pendingObserver.disconnect()
+    pendingObserver = null
+  }
   if (resizeObserver) {
     resizeObserver.disconnect()
     resizeObserver = null

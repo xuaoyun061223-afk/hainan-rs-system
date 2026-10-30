@@ -54,10 +54,15 @@
         <el-tag size="small" :type="assessment.active ? 'warning' : 'danger'" effect="dark">
           {{ assessment.statusText }}
         </el-tag>
-        <el-tag size="small" type="info" effect="plain">风险等级 {{ assessment.impactLevel }}</el-tag>
+        <el-tag size="small" type="info" effect="plain">
+          {{ assessment.assessmentOnly ? '潜在' : '' }}风险等级 {{ assessment.impactLevel }}
+        </el-tag>
         <span class="data-note switching-note" v-if="switching">
           <el-icon class="is-loading" :size="13"><Loading /></el-icon>
           评估计算中…
+        </span>
+        <span class="data-note" v-else-if="assessment.assessmentOnly">
+          强度 {{ assessment.grade }} · 最大风速 {{ assessment.wind }} m/s
         </span>
         <span class="data-note" v-else>
           强度 {{ assessment.grade }} · 最大风速 {{ assessment.wind }} m/s · {{ assessment.landfall }}
@@ -67,16 +72,16 @@
     </div>
 
     <div class="stat-row">
-      <StatCard label="SAR 提取淹没面积" :value="assessment.inundationArea" unit="km²" icon="Pouring" color="#ffb02e" sub="灾前/灾后 Sentinel-1 变化检测" />
-      <StatCard label="受损建筑" :value="damagedBuildings" unit="栋" icon="OfficeBuilding" color="#ff5c5c" sub="xBD 四级损毁模型判识" />
-      <StatCard label="植被显著受损区" :value="assessment.vegetationDamage" unit="km²" icon="Crop" color="#2ee6a6" sub="NDVI 下降 ≥ 0.15 区域" />
-      <StatCard label="直接经济损失" :value="assessment.economicLoss" unit="亿元" icon="Money" color="#2f9bff" :sub="`受灾人口 ${assessment.affectedPopulation} 万人`" />
+      <StatCard label="SAR 提取淹没面积" :value="statValue(assessment.inundationArea)" unit="km²" icon="Pouring" color="#ffb02e" :sub="damageSub('灾前/灾后 Sentinel-1 变化检测')" />
+      <StatCard label="受损建筑" :value="statValue(damagedBuildings)" unit="栋" icon="OfficeBuilding" color="#ff5c5c" :sub="damageSub('xBD 四级损毁模型判识')" />
+      <StatCard label="植被显著受损区" :value="statValue(assessment.vegetationDamage)" unit="km²" icon="Crop" color="#2ee6a6" :sub="damageSub('NDVI 下降 ≥ 0.15 区域')" />
+      <StatCard label="直接经济损失" :value="statValue(assessment.economicLoss)" unit="亿元" icon="Money" color="#2f9bff" :sub="economicSub" />
     </div>
 
     <div class="main-row">
       <div class="tech-panel map-panel">
         <div class="panel-title">
-          灾后淹没范围与受灾区域（SAR 合成）
+          {{ assessment.assessmentOnly ? '台风预测路径与风险范围' : '灾后淹没范围与受灾区域（SAR 合成）' }}
           <span class="map-tip">{{ mapTip }}</span>
         </div>
         <div class="map-container">
@@ -86,15 +91,27 @@
             :track="assessment.track"
             :cities="assessment.cities"
             :inundation="assessment.polygons"
-            :focus-point="mapFocus"
+            :focus-point="assessment.assessmentOnly ? null : mapFocus"
             :landfall-city="assessment.landfallCity"
             :legend="mapLegend"
           />
         </div>
       </div>
       <div class="tech-panel recover-panel">
-        <div class="panel-title">灾后恢复指标</div>
-        <div class="recover-grid">
+        <div class="panel-title">{{ assessment.assessmentOnly ? '风险评估（模型预估）' : '灾后恢复指标' }}</div>
+        <!-- 尚未登陆：没有实况灾情，也不编造恢复率，只列出模型外推的潜在影响 -->
+        <div class="risk-grid" v-if="assessment.assessmentOnly">
+          <div class="risk-item" v-for="r in riskItems" :key="r.label">
+            <span class="risk-label">{{ r.label }}</span>
+            <b>{{ r.value }}</b>
+            <em>预估</em>
+          </div>
+          <div class="recover-note">
+            台风{{ notLandedLabel }}，以上为按当前强度与预测路径外推的<strong>潜在影响</strong>，不是实况灾情；
+            登陆后自动切换为淹没范围与恢复指标统计。轨迹最近距海南 {{ assessment.proximityKm }} km
+          </div>
+        </div>
+        <div class="recover-grid" v-else>
           <div class="recover-item">
             <div class="recover-label">电力恢复率</div>
             <el-progress :percentage="assessment.recovery.power" :stroke-width="12" :color="powerColor" :show-text="false" />
@@ -122,19 +139,26 @@
       <div class="tech-panel chart-panel">
         <div class="panel-title">建筑损毁分级（xBD 模型）</div>
         <div class="chart-body">
-          <ChartBox :option="damagePie" height="100%" />
+          <ChartBox v-if="!assessment.assessmentOnly" :option="damagePie" height="100%" />
+          <div v-else class="empty-hint">{{ notLandedLabel }}，暂无建筑损毁统计</div>
         </div>
       </div>
       <div class="tech-panel chart-panel">
         <div class="panel-title">台风前后海南岛 NDVI 均值时序</div>
         <div class="chart-body">
-          <ChartBox :option="ndviOption" height="100%" />
+          <ChartBox v-if="!assessment.assessmentOnly" :option="ndviOption" height="100%" />
+          <div v-else class="empty-hint">{{ notLandedLabel }}，暂无过境前后 NDVI 对比</div>
         </div>
       </div>
       <div class="tech-panel chart-panel">
         <div class="panel-title">重点市县灾情统计</div>
         <div class="table-body">
-          <el-table :data="assessment.cities" size="small" height="100%">
+          <el-table
+            :data="assessment.cities"
+            size="small"
+            height="100%"
+            :empty-text="cityEmptyText"
+          >
             <el-table-column prop="city" label="市县" width="70" />
             <el-table-column prop="inundation" label="淹没(km²)" width="96" />
             <el-table-column prop="buildings" label="受损建筑(栋)" width="110" />
@@ -181,6 +205,8 @@ const cache = new Map()
 const EMPTY = {
   id: '', name: '', grade: '', wind: 0, pressure: null, date: '', landfall: '未登陆',
   active: false, statusText: '', impactLevel: '一般', proximityKm: 0,
+  // landed=false（尚未登陆）时只作风险评估，灾情指标不下发具体数值
+  landed: true, assessmentOnly: false, forecast: null,
   affectedCities: 0, affectedPopulation: 0, economicLoss: 0, inundationArea: 0,
   vegetationDamage: 0,
   building: { none: 0, minor: 0, major: 0, destroyed: 0 },
@@ -197,11 +223,14 @@ const damagedBuildings = computed(
   () => (assessment.value.building.minor || 0) + (assessment.value.building.major || 0) + (assessment.value.building.destroyed || 0)
 )
 
-const mapLegend = [
-  { label: 'SAR 淹没区', color: '#ffb02e' },
-  { label: '受灾市县', color: '#ff5c5c' },
-  { label: '台风路径', color: '#ff7a45' }
-]
+const mapLegend = computed(() => (assessment.value.assessmentOnly
+  ? [{ label: '预测路径', color: '#ff7a45' }]
+  : [
+      { label: 'SAR 淹没区', color: '#ffb02e' },
+      { label: '受灾市县', color: '#ff5c5c' },
+      { label: '台风路径', color: '#ff7a45' }
+    ]
+))
 // 登陆/影响锚点：地图上单独标记，并作为视野中心之一
 const mapFocus = computed(() => {
   const a = assessment.value
@@ -209,11 +238,35 @@ const mapFocus = computed(() => {
   const lf = (a.track || []).find((p) => (p.grade || '').includes('登陆'))
   return { lon: a.landfallLon, lat: a.landfallLat, t: lf ? lf.t : a.date }
 })
+// 尚未登陆的台风没有实测灾情，指标一律显示「—」，避免把外推值当成观测结果
+const notLandedLabel = computed(() => (assessment.value.active ? '尚未登陆' : '未登陆'))
 const mapTip = computed(() => {
   const a = assessment.value
+  if (a.assessmentOnly) return `${notLandedLabel.value} · 仅显示预测路径与潜在风险范围`
   if (!a.polygons.length) return '该台风未逼近海南岛，无淹没区'
   const city = a.landfallCity ? `${a.landfallCity} · ` : ''
   return `${city}锚点 ${a.landfallLon?.toFixed?.(2) ?? ''}°E, ${a.landfallLat?.toFixed?.(2) ?? ''}°N`
+})
+
+const statValue = (v) => (assessment.value.assessmentOnly ? '—' : v)
+const damageSub = (text) => (assessment.value.assessmentOnly ? `${notLandedLabel.value} · 暂无实测灾情` : text)
+const economicSub = computed(() => (assessment.value.assessmentOnly
+  ? `${notLandedLabel.value} · 暂无灾情统计`
+  : `受灾人口 ${assessment.value.affectedPopulation} 万人`
+))
+const cityEmptyText = computed(() => `该台风${notLandedLabel.value}，暂无市县灾情`)
+
+// 风险评估面板：只展示模型外推的潜在影响，并明确标注「预估」
+const riskItems = computed(() => {
+  const f = assessment.value.forecast || {}
+  const num = (v, unit) => (v == null ? '—' : `${v} ${unit}`)
+  return [
+    { label: '潜在淹没面积', value: num(f.inundationArea, 'km²') },
+    { label: '潜在受损建筑', value: num(f.damagedBuildings, '栋') },
+    { label: '潜在植被受损', value: num(f.vegetationDamage, 'km²') },
+    { label: '潜在直接损失', value: num(f.economicLoss, '亿元') },
+    { label: '潜在受灾人口', value: num(f.affectedPopulation, '万人') }
+  ]
 })
 
 const powerColor = computed(() => {
@@ -481,6 +534,46 @@ onMounted(async () => {
 }
 .recover-item b { color: #eaf4ff; }
 .recover-note { font-size: 11px; color: var(--text-sub); line-height: 1.6; }
+.recover-note strong { color: #ffb02e; font-weight: 600; }
+/* 尚未登陆：只展示模型预估的潜在影响 */
+.risk-grid {
+  flex: 1;
+  min-height: 0;
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.risk-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 4px;
+  background: rgba(47, 155, 255, 0.06);
+  border-left: 2px solid rgba(255, 176, 46, 0.6);
+  font-size: 13px;
+}
+.risk-label { color: var(--text-sub); flex: 1; }
+.risk-item b { color: #ffcf70; font-weight: 600; }
+.risk-item em {
+  font-style: normal;
+  font-size: 11px;
+  color: #7fa8d8;
+  border: 1px solid rgba(127, 168, 216, 0.4);
+  border-radius: 3px;
+  padding: 0 4px;
+}
+.empty-hint {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--text-sub);
+  text-align: center;
+  padding: 0 12px;
+}
 .bottom-row {
   flex: none;
   height: 246px;

@@ -26,7 +26,12 @@
       <div class="tech-panel map-panel">
         <div class="panel-title">近岸监测站点分布与风险等级</div>
         <div class="map-container">
-          <BaseMap :base-type="appStore.baseMapType" :stations="stations" :legend="mapLegend" />
+          <BaseMap
+            :base-type="appStore.baseMapType"
+            :stations="stations"
+            :active-station="appStore.activeStation"
+            :legend="mapLegend"
+          />
         </div>
       </div>
       <div class="chart-col">

@@ -17,6 +17,8 @@ import { loadHainanOutline } from '@/utils/hainanOutline'
 const props = defineProps({
   baseType: { type: String, default: 'vector' }, // vector | satellite
   stations: { type: Array, default: () => [] },
+  // 当前选中的监测站点名：变化时把视野放大到该站点（生态监测页用）
+  activeStation: { type: String, default: '' },
   track: { type: Array, default: () => [] },
   inundation: { type: Array, default: () => [] },
   // 受灾市县点位（含经度/纬度/淹没面积），用于把「重点市县灾情」落到地图上
@@ -35,6 +37,8 @@ let map = null
 let vectorLayer = null
 let satelliteLayer = null
 let dataLayer = null
+// 已经聚焦过的站点名，避免同一站点被反复飞过去
+let focusedStation = ''
 
 const riskColor = { 低: '#2ee6a6', 中: '#ffb02e', 高: '#ff5c5c' }
 const HAINAN_CENTER = [19.35, 109.85]
@@ -105,11 +109,23 @@ function drawStations() {
     .filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lon))
     .forEach((s) => {
       const color = riskColor[s.risk] || '#2f9bff'
+      const active = props.activeStation && s.name === props.activeStation
+      // 选中站点加一圈青色虚线，一眼看出当前在看哪个站
+      if (active) {
+        L.circleMarker([s.lat, s.lon], {
+          radius: 16,
+          color: '#00e5ff',
+          weight: 2,
+          dashArray: '4 4',
+          fillColor: '#00e5ff',
+          fillOpacity: 0.1
+        }).addTo(dataLayer)
+      }
       const icon = L.divIcon({
         className: '',
-        html: `<div class="map-pin" style="color:${color};background:${color}"></div>`,
-        iconSize: [14, 14],
-        iconAnchor: [7, 7]
+        html: `<div class="map-pin${active ? ' is-active' : ''}" style="color:${color};background:${color}"></div>`,
+        iconSize: active ? [18, 18] : [14, 14],
+        iconAnchor: active ? [9, 9] : [7, 7]
       })
       L.marker([s.lat, s.lon], { icon })
         .bindPopup(
@@ -119,6 +135,25 @@ function drawStations() {
         )
         .addTo(dataLayer)
     })
+}
+
+/** 按名称找站点（坐标必须有效，否则 Leaflet 会抛 Invalid LatLng） */
+function stationByName(name) {
+  if (!name) return null
+  return props.stations.find(
+    (s) => s.name === name && Number.isFinite(s.lat) && Number.isFinite(s.lon)
+  ) || null
+}
+
+/** 把视野放大到指定监测站点；站点还没加载时返回 false，交给调用方回退到全球面取景 */
+function focusStation(name, { animate = true } = {}) {
+  if (!map || !name) return false
+  const s = stationByName(name)
+  if (!s) return false
+  focusedStation = name
+  // 10 级约等于「看清海湾及周边海岸线」的尺度
+  map.flyTo([s.lat, s.lon], 10, { duration: animate ? 1 : 0, easeLinearity: 0.25 })
+  return true
 }
 
 function drawCities() {
@@ -296,11 +331,21 @@ function drawAll() {
 function fitToData({ animate = false } = {}) {
   if (!map) return
   const pts = []
+  const nearPts = []
   props.track.forEach((p) => {
     if (p.lat == null || p.lon == null) return
     const dist = kmToHainan(p.lat, p.lon)
-    if (dist <= NEAR_TRACK_KM) pts.push([p.lat, p.lon])
+    if (dist <= NEAR_TRACK_KM) nearPts.push([p.lat, p.lon])
   })
+  // 台风还在远海（尚无靠近海南的轨迹）：改为纳入整条轨迹，
+  // 让「预测路径 + 海南岛」同时入画，而不是只看到一座岛
+  if (nearPts.length) {
+    pts.push(...nearPts)
+  } else {
+    props.track.forEach((p) => {
+      if (Number.isFinite(p.lat) && Number.isFinite(p.lon)) pts.push([p.lat, p.lon])
+    })
+  }
   props.inundation.forEach((ring) => {
     if (!Array.isArray(ring)) return
     ring.forEach((pt) => {
@@ -328,17 +373,46 @@ function fitToData({ animate = false } = {}) {
 
 function redraw() {
   drawAll()
-  fitToData()
+  syncView()
+}
+
+/**
+ * 视图决策：
+ * - 有选中站点（生态监测页）→ 放大到该站点；
+ * - 否则（灾害评估页）→ 取景覆盖整岛、淹没区、市县与近海南的轨迹段。
+ */
+function syncView({ animate = false } = {}) {
+  if (!map) return
+  if (props.activeStation && stationByName(props.activeStation)) {
+    if (focusedStation !== props.activeStation) {
+      // 站点聚焦一律带动画，从整岛视角平滑飞到目标站点
+      focusStation(props.activeStation, { animate: true })
+    }
+    return
+  }
+  fitToData({ animate })
 }
 
 watch(
   () => [props.stations, props.track, props.inundation, props.cities, props.focusPoint, props.showWindCircle, props.focusTime],
   () => {
     drawAll()
-    fitToData()
+    syncView()
   },
   { deep: true }
 )
+
+// 切换监测站点：重画站点高亮，并带动画飞入新站点（生态监测页）
+watch(() => props.activeStation, (name) => {
+  if (!map) return
+  drawAll()
+  if (name && stationByName(name)) {
+    focusStation(name)
+  } else if (!name) {
+    focusedStation = ''
+    fitToData()
+  }
+})
 
 // 点击预警时间后，突出该时刻台风与海南岛的范围
 watch(() => props.focusTime, (t) => {
@@ -377,12 +451,13 @@ onMounted(() => {
   buildTileLayers()
   dataLayer = L.layerGroup().addTo(map)
   redraw()
-  // 真实海岸线轮廓稍后到达，到达后补画并重新适配视野
+  // 真实海岸线轮廓稍后到达，到达后补画；视野仍走 syncView，
+  // 否则海岸线一到就会把已聚焦的监测站点重新拉回整岛
   loadHainanOutline().then((pts) => {
     if (!map) return
     outlinePts = pts
     drawAll()
-    fitToData()
+    syncView()
   })
 })
 
@@ -448,5 +523,14 @@ onBeforeUnmount(() => {
   height: 12px;
   border-radius: 50%;
   box-shadow: 0 0 8px currentColor;
+  border: 2px solid rgba(6, 18, 42, 0.9);
+  box-sizing: border-box;
+}
+/* 当前选中站点：放大 + 青色描边，与旁边的虚线光圈呼应 */
+:deep(.map-pin.is-active) {
+  width: 18px;
+  height: 18px;
+  border-color: #00e5ff;
+  box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.25), 0 0 14px #00e5ff;
 }
 </style>

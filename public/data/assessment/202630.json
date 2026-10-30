@@ -8,93 +8,38 @@
   "landfall": "未登陆",
   "landfallCity": "",
   "active": false,
-  "statusText": "已完成灾后快速评估",
+  "statusText": "未登陆 · 仅作风险评估",
   "impactLevel": "较大",
+  "landed": false,
+  "assessmentOnly": true,
+  "forecast": {
+    "inundationArea": 11.5,
+    "vegetationDamage": 66.0,
+    "economicLoss": 10.9,
+    "affectedPopulation": 9.9,
+    "damagedBuildings": 4299,
+    "impactLevel": "较大"
+  },
   "proximityKm": 1372.8,
   "landfallLon": 122.0,
   "landfallLat": 24.5,
-  "affectedCities": 7,
-  "affectedPopulation": 9.9,
-  "economicLoss": 10.9,
-  "inundationArea": 11.5,
-  "vegetationDamage": 66.0,
+  "affectedCities": 0,
+  "affectedPopulation": 0.0,
+  "economicLoss": 0.0,
+  "inundationArea": 0.0,
+  "vegetationDamage": 0.0,
   "building": {
-    "none": 501763,
-    "minor": 3273,
-    "major": 797,
-    "destroyed": 227
+    "none": 506060,
+    "minor": 0,
+    "major": 0,
+    "destroyed": 0
   },
   "recovery": {
-    "power": 96.9,
-    "road": 98.9,
-    "ndvi": 98.0
+    "power": 100.0,
+    "road": 100.0,
+    "ndvi": 100.0
   },
-  "cities": [
-    {
-      "city": "文昌",
-      "lon": 110.8,
-      "lat": 19.55,
-      "inundation": 5.4,
-      "buildings": 2086,
-      "vegetation": 31.0
-    },
-    {
-      "city": "海口",
-      "lon": 110.32,
-      "lat": 20.04,
-      "inundation": 2.8,
-      "buildings": 1218,
-      "vegetation": 13.6
-    },
-    {
-      "city": "琼海",
-      "lon": 110.47,
-      "lat": 19.26,
-      "inundation": 1.0,
-      "buildings": 295,
-      "vegetation": 6.0
-    },
-    {
-      "city": "澄迈",
-      "lon": 110.0,
-      "lat": 19.74,
-      "inundation": 0.8,
-      "buildings": 271,
-      "vegetation": 4.4
-    },
-    {
-      "city": "定安",
-      "lon": 110.35,
-      "lat": 19.68,
-      "inundation": 0.8,
-      "buildings": 205,
-      "vegetation": 6.7
-    },
-    {
-      "city": "临高",
-      "lon": 109.69,
-      "lat": 19.91,
-      "inundation": 0.5,
-      "buildings": 138,
-      "vegetation": 2.5
-    },
-    {
-      "city": "儋州",
-      "lon": 109.58,
-      "lat": 19.52,
-      "inundation": 0.2,
-      "buildings": 59,
-      "vegetation": 1.2
-    },
-    {
-      "city": "其他",
-      "lon": 109.5,
-      "lat": 18.6,
-      "inundation": 0.0,
-      "buildings": 25,
-      "vegetation": 0.5
-    }
-  ],
+  "cities": [],
   "ndvi": {
     "dates": [
       "10-12",
@@ -125,15 +70,10 @@
       null,
       null,
       null,
-      null,
-      0.48,
-      0.51,
-      0.54,
-      0.57,
-      0.59
+      null
     ],
-    "landfallDate": "10-24",
-    "low": 0.48
+    "landfallDate": "",
+    "low": null
   },
   "polygons": [],
   "track": [

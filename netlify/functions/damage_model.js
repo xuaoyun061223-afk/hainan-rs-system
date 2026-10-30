@@ -144,8 +144,25 @@ function trackPoints(track) {
     }))
 }
 
+/**
+ * 是否已经登陆：轨迹里出现「登陆」标注，或文字描述给出了登陆地（而不是「未登陆」）。
+ * 尚未登陆的台风（含预报路径、远海转向）只做风险评估，不生成实况灾情数字。
+ */
+function landedAlready(track, landfallText = '') {
+  if ((track || []).some((p) => String(p?.grade || '').includes('登陆'))) return true
+  const text = String(landfallText || '').trim()
+  if (!text || text.includes('未登陆')) return false
+  // 「近海」「掠过」只是靠近，不等于登陆
+  return !(text.includes('近海') || text.includes('掠过'))
+}
+
+/** 按经济损失量级给出影响等级 */
+function impactLevel(economic) {
+  return economic >= 100 ? '特别重大' : economic >= 50 ? '重大' : economic >= 10 ? '较大' : '一般'
+}
+
 /** 台风前后 NDVI 时序：以登陆日为界，前段正常值、后段骤降再逐步恢复 */
-function ndviSeries(r, landfallT, year) {
+function ndviSeries(r, landfallT, year, impact = true) {
   let base = new Date(Date.UTC(year, 8, 6))
   const mm = landfallT.slice(0, 2)
   const dd = landfallT.slice(3, 5)
@@ -158,6 +175,10 @@ function ndviSeries(r, landfallT, year) {
     return `${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
   })
   const before = [0.78, 0.77, 0.78, 0.76, 0.75, null, null, null, null, null]
+  if (!impact) {
+    // 尚未登陆：只给基线序列，表示「尚无过境影响」
+    return { dates, before, after: [null, null, null, null, null, null, null, null, null, null], landfallDate: '', low: null }
+  }
   const low = clamp(0.78 - 0.27 * r ** 1.1, 0.25, 0.75)
   const afterVals = Array.from({ length: 5 }, (_, i) => rnd(low + 0.028 * i, 2))
   const after = [null, null, null, null, null, ...afterVals]
@@ -228,12 +249,54 @@ export function assessDamage(typhoon, track) {
     }
   }
 
-  const level = economic >= 100 ? '特别重大' : economic >= 50 ? '重大' : economic >= 10 ? '较大' : '一般'
   const active = Boolean(typhoon.active)
+  const landfallText = String(typhoon.landfall || '')
+  const landed = landedAlready(points, landfallText)
   const year = Number(String(typhoon.date || '').slice(0, 4)) || 2026
   const t = String(lf.t || '')
-  const ndvi = ndviSeries(r, t.length >= 5 ? t.slice(0, 5) : '09-06', year)
-  const landfallText = String(typhoon.landfall || '')
+  const ndvi = ndviSeries(r, t.length >= 5 ? t.slice(0, 5) : '09-06', year, landed)
+
+  let level
+  let statusText
+  let landfallCityName
+  let forecast = null
+  let citiesOut = cities
+  let polygonsOut = polygons
+  let damageInundation = inundation
+  let damageVegetation = vegetation
+  let damageEconomic = economic
+  let damagePopulation = population
+  let buildingsOut = { none, minor, major, destroyed }
+  let recoveryOut = { power, road, ndvi: ndviRecover }
+
+  if (landed) {
+    level = impactLevel(economic)
+    statusText = active ? '实时预评估（滚动更新）' : '已完成灾后快速评估'
+    landfallCityName = landfallCity(landfallText, anchor)
+  } else {
+    // 尚未登陆（含海域活动、预报路径）：不给实况灾情数字，避免用推测值假装成观测结果。
+    // 模型外推的潜在影响单独放在 forecast 里，仅作风险评估参考。
+    forecast = {
+      inundationArea: inundation,
+      vegetationDamage: vegetation,
+      economicLoss: economic,
+      affectedPopulation: population,
+      damagedBuildings: minor + major + destroyed,
+      impactLevel: impactLevel(economic),
+    }
+    level = forecast.impactLevel
+    // 活跃台风用「尚未登陆」，已结束的用「未登陆」，两种都只作风险评估
+    statusText = active ? '尚未登陆 · 仅作风险评估' : '未登陆 · 仅作风险评估'
+    landfallCityName = ''
+    citiesOut = []
+    polygonsOut = []
+    damageInundation = 0
+    damageVegetation = 0
+    damageEconomic = 0
+    damagePopulation = 0
+    buildingsOut = { none: TOTAL_BUILDINGS, minor: 0, major: 0, destroyed: 0 }
+    recoveryOut = { power: 100, road: 100, ndvi: 100 }
+  }
 
   return {
     id: String(typhoon.id || ''),
@@ -243,23 +306,27 @@ export function assessDamage(typhoon, track) {
     pressure: typhoon.pressure ?? null,
     date: typhoon.date || '',
     landfall: landfallText || '未登陆',
-    landfallCity: landfallCity(landfallText, anchor),
+    landfallCity: landfallCityName,
     active,
-    statusText: active ? '实时预评估（滚动更新）' : '已完成灾后快速评估',
+    statusText,
     impactLevel: level,
+    // landed=false 时前端只展示路径与风险提示，灾情指标一律显示「—」
+    landed,
+    assessmentOnly: !landed,
+    forecast,
     proximityKm: dmin,
     landfallLon: anchor.lon,
     landfallLat: anchor.lat,
-    affectedCities: cities.filter((c) => c.inundation > 0).length,
-    affectedPopulation: population,
-    economicLoss: economic,
-    inundationArea: inundation,
-    vegetationDamage: vegetation,
-    building: { none, minor, major, destroyed },
-    recovery: { power, road, ndvi: ndviRecover },
-    cities,
+    affectedCities: citiesOut.filter((c) => c.inundation > 0).length,
+    affectedPopulation: damagePopulation,
+    economicLoss: damageEconomic,
+    inundationArea: damageInundation,
+    vegetationDamage: damageVegetation,
+    building: buildingsOut,
+    recovery: recoveryOut,
+    cities: citiesOut,
     ndvi,
-    polygons,
+    polygons: polygonsOut,
     // 轨迹随评估一起返回，前端地图据此绘制完整路径、登陆点与风圈
     track: trackPoints(points),
   }
