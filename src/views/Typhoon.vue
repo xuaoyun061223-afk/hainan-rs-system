@@ -29,7 +29,29 @@
           <span class="map-tip">Cesium 三维地球 · 路径分段着色 · 登陆点风圈</span>
         </div>
         <div class="map-container">
-          <CesiumGlobe :track="track" :show-wind-circle="true" />
+          <CesiumGlobe :track="track" :show-wind-circle="true" :sim-index="simIndex" />
+        </div>
+        <!-- 路径模拟进度条：拖动时按时间顺序回放台风路径 -->
+        <div class="sim-bar">
+          <div class="sim-head">
+            <span class="sim-title">路径模拟</span>
+            <span v-if="simPoint.t" class="sim-now">
+              {{ simPoint.t }} · {{ simPoint.grade }} · {{ simPoint.wind }} m/s · 风圈 {{ simPoint.radius }} km
+            </span>
+            <span class="sim-step">{{ simIndex + 1 }} / {{ track.length || 0 }}</span>
+          </div>
+          <div class="sim-slider">
+            <span class="sim-edge">{{ firstT }}</span>
+            <el-slider
+              v-model="simIndex"
+              :min="0"
+              :max="Math.max(0, track.length - 1)"
+              :show-tooltip="false"
+              :disabled="!track.length"
+              class="sim-range"
+            />
+            <span class="sim-edge">{{ lastT }}</span>
+          </div>
         </div>
       </div>
 
@@ -86,6 +108,16 @@ const appStore = useAppStore()
 
 const list = ref([])
 const track = ref([])
+// 路径模拟进度（数组下标），加载/切换台风时默认停在最新时次
+const simIndex = ref(0)
+
+const simPoint = computed(
+  () => track.value[Math.min(simIndex.value, track.value.length - 1)] || {}
+)
+const firstT = computed(() => (track.value[0]?.t || '').replace(' 登陆', '') || '—')
+const lastT = computed(
+  () => (track.value[track.value.length - 1]?.t || '').replace(' 登陆', '') || '—'
+)
 
 const active = computed(
   () => list.value.find((t) => t.id === appStore.activeTyphoonId) || list.value[0] || {}
@@ -108,6 +140,8 @@ const riskLevel = computed(() => {
 
 async function load(id) {
   track.value = await fetchTyphoonTrack(id)
+  // 切换台风后回到最新时次（实况位置），同时触发地图对准该台风
+  simIndex.value = Math.max(0, track.value.length - 1)
 }
 
 function onSelect(row) {
@@ -236,6 +270,33 @@ onMounted(async () => {
   margin-left: auto; font-size: 11px; font-weight: 400;
   color: var(--text-sub); letter-spacing: 0;
 }
+/* 路径模拟进度条 */
+.sim-bar {
+  flex: 0 0 auto;
+  padding: 6px 14px 2px;
+  border-top: 1px solid rgba(64, 158, 255, 0.18);
+  background: rgba(6, 20, 42, 0.55);
+}
+.sim-head { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+.sim-title { color: #00e5ff; font-weight: 600; }
+.sim-now { color: #eaf4ff; }
+.sim-step { margin-left: auto; color: var(--text-sub); font-variant-numeric: tabular-nums; }
+.sim-slider { display: flex; align-items: center; gap: 8px; }
+.sim-edge { font-size: 11px; color: var(--text-sub); font-variant-numeric: tabular-nums; }
+:deep(.sim-range) { flex: 1; }
+:deep(.sim-range .el-slider__runway) { height: 4px; background-color: rgba(64, 158, 255, 0.18); }
+:deep(.sim-range .el-slider__bar) {
+  height: 4px;
+  background: linear-gradient(90deg, #00e5ff, #ff7a45);
+}
+:deep(.sim-range .el-slider__button) {
+  width: 13px; height: 13px;
+  border: 2px solid #00e5ff;
+  background: #04142b;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.55);
+}
+:deep(.sim-range .el-slider__button-wrapper) { top: -15px; }
+:deep(.sim-range.is-disabled .el-slider__button) { border-color: #52708f; box-shadow: none; }
 .detail-col { min-height: 0; }
 .detail-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .detail-name { font-size: 17px; font-weight: 700; color: #eaf4ff; }

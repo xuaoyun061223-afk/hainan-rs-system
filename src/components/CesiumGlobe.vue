@@ -19,7 +19,9 @@ const props = defineProps({
   // 登陆点所在市县（用于标注"登陆点 · 文昌"）
   landfallCity: { type: String, default: '' },
   // 淹没区多边形
-  inundation: { type: Array, default: () => [] }
+  inundation: { type: Array, default: () => [] },
+  // 路径模拟进度：0 ~ track.length-1，-1 表示显示完整路径（默认）
+  simIndex: { type: Number, default: -1 }
 })
 
 const containerEl = ref(null)
@@ -58,11 +60,20 @@ function clearTrack() {
   }
 }
 
-function drawTrack() {
+/**
+ * 绘制台风路径。
+ * fly=true 时把镜头对准「台风当前时次」，用于切换到某个台风；
+ * fly=false 时只重绘（拖动下方进度条时用），避免镜头随每次滑动来回跳。
+ */
+function drawTrack(fly = true) {
   if (!viewer || !props.track.length) return
   clearTrack()
 
-  const positions = props.track.map((p) =>
+  const total = props.track.length
+  const current = props.simIndex >= 0 ? Math.min(props.simIndex, total - 1) : total - 1
+  const shown = props.track.slice(0, current + 1)
+
+  const positions = shown.map((p) =>
     Cesium.Cartesian3.fromDegrees(p.lon, p.lat, 2000)
   )
 
@@ -83,8 +94,8 @@ function drawTrack() {
     trackEntities.push(line)
   }
 
-  // 各路径点
-  props.track.forEach((p, idx) => {
+  // 各路径点（只画到当前模拟时次）
+  shown.forEach((p) => {
     const isLandfall = (p.grade || '').includes('登陆')
     const color = gradeColor(p.grade)
 
@@ -137,56 +148,86 @@ function drawTrack() {
     }
   })
 
-  // 七级风圈椭圆
-  if (props.showWindCircle) {
-    const landfallPt = props.track.find((p) => (p.grade || '').includes('登陆')) || props.track[0]
-    if (landfallPt) {
-      const circle = viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(landfallPt.lon, landfallPt.lat, 100),
-        ellipse: {
-          semiMajorAxis: landfallPt.radius * 1000,
-          semiMinorAxis: landfallPt.radius * 1000,
-          height: 100,
-          material: Cesium.Color.fromCssColorString('#ff5c5c').withAlpha(0.15),
-          outline: true,
-          outlineColor: Cesium.Color.fromCssColorString('#ff5c5c')
-        }
-      })
-      trackEntities.push(circle)
+  // 当前时次的台风中心：大号中心点 + 时次/强度标签，拖动进度条时随之移动
+  const centerPt = shown[current]
+  const centerEntity = viewer.entities.add({
+    position: Cesium.Cartesian3.fromDegrees(centerPt.lon, centerPt.lat, 3000),
+    point: {
+      pixelSize: 18,
+      color: Cesium.Color.fromCssColorString('#ffd666'),
+      outlineColor: Cesium.Color.fromCssColorString('#ff5c5c'),
+      outlineWidth: 3,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY
+    },
+    label: {
+      text: `${centerPt.t || ''} ${centerPt.grade || ''}`.trim(),
+      font: '13px sans-serif',
+      fillColor: Cesium.Color.WHITE,
+      outlineColor: Cesium.Color.BLACK,
+      outlineWidth: 2,
+      style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+      verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+      pixelOffset: new Cesium.Cartesian2(0, -22),
+      showBackground: true,
+      backgroundColor: Cesium.Color.fromCssColorString('#0d2244')
     }
+  })
+  trackEntities.push(centerEntity)
+
+  // 七级风圈：跟随台风当前时次中心（原来固定画在登陆点，模拟时看起来不动）
+  if (props.showWindCircle && Number.isFinite(centerPt.radius)) {
+    const circle = viewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(centerPt.lon, centerPt.lat, 100),
+      ellipse: {
+        semiMajorAxis: centerPt.radius * 1000,
+        semiMinorAxis: centerPt.radius * 1000,
+        height: 100,
+        material: Cesium.Color.fromCssColorString('#ff5c5c').withAlpha(0.15),
+        outline: true,
+        outlineColor: Cesium.Color.fromCssColorString('#ff5c5c')
+      }
+    })
+    trackEntities.push(circle)
   }
 
-  // 相机取景：整条台风路径 ∪ 海南岛范围，两者同时入画。
-  // 之前只取「离海南 800 km 内的那一段」，点开远海转向的台风时看不到完整路径；
-  // 现在改为「轨迹外接矩形与海南岛并集 + 边距」，地图会相应拉远，
-  // 台风走向（含远海段）与海南岛都能一眼看到。
-  const HAINAN_RECT = [108.35, 17.75, 111.35, 20.3] // [西, 南, 东, 北]
-  const lons = props.track.map((p) => p.lon).filter((v) => Number.isFinite(v))
-  const lats = props.track.map((p) => p.lat).filter((v) => Number.isFinite(v))
-  let west = lons.length ? Math.min(HAINAN_RECT[0], ...lons) : HAINAN_RECT[0]
-  let south = lats.length ? Math.min(HAINAN_RECT[1], ...lats) : HAINAN_RECT[1]
-  let east = lons.length ? Math.max(HAINAN_RECT[2], ...lons) : HAINAN_RECT[2]
-  let north = lats.length ? Math.max(HAINAN_RECT[3], ...lats) : HAINAN_RECT[3]
-  // 单点/极短轨迹时给出最小视野，避免相机贴到地面
-  if (east - west < 4) {
-    const c = (west + east) / 2
-    west = c - 2
-    east = c + 2
+  // 相机取景：切换台风时以「当前时次 + 最近 5 个路径点」取景，视野 8°×6° ~ 16°×10°；
+  // 拖动进度条时不做大幅飞行动画，只以固定 8°×6° 视野轻推镜头跟随台风中心，
+  // 这样回放时台风始终在画面中央，又不会每次滑动都大幅缩放。
+  if (Number.isFinite(centerPt.lon) && Number.isFinite(centerPt.lat)) {
+    const MIN_SPAN_LON = 8
+    const MIN_SPAN_LAT = 6
+    let west = centerPt.lon - MIN_SPAN_LON / 2
+    let east = centerPt.lon + MIN_SPAN_LON / 2
+    let south = centerPt.lat - MIN_SPAN_LAT / 2
+    let north = centerPt.lat + MIN_SPAN_LAT / 2
+    if (fly) {
+      const tail = shown.slice(Math.max(0, current - 5))
+      const MAX_SPAN_LON = 16
+      const MAX_SPAN_LAT = 10
+      const lons = tail.map((p) => p.lon).filter((v) => Number.isFinite(v))
+      const lats = tail.map((p) => p.lat).filter((v) => Number.isFinite(v))
+      lons.forEach((v) => {
+        west = Math.min(west, v - 0.5)
+        east = Math.max(east, v + 0.5)
+      })
+      lats.forEach((v) => {
+        south = Math.min(south, v - 0.5)
+        north = Math.max(north, v + 0.5)
+      })
+      if (east - west > MAX_SPAN_LON) {
+        west = centerPt.lon - MAX_SPAN_LON / 2
+        east = centerPt.lon + MAX_SPAN_LON / 2
+      }
+      if (north - south > MAX_SPAN_LAT) {
+        south = centerPt.lat - MAX_SPAN_LAT / 2
+        north = centerPt.lat + MAX_SPAN_LAT / 2
+      }
+    }
+    viewer.camera.flyTo({
+      destination: Cesium.Rectangle.fromDegrees(west, south, east, north),
+      duration: fly ? 1.2 : 0.4
+    })
   }
-  if (north - south < 3) {
-    const c = (south + north) / 2
-    south = c - 1.5
-    north = c + 1.5
-  }
-  // 四周再留 8% 边距，标签与风圈不会被画到画面外
-  const padLon = Math.min(4, (east - west) * 0.08)
-  const padLat = Math.min(3, (north - south) * 0.08)
-  viewer.camera.flyTo({
-    destination: Cesium.Rectangle.fromDegrees(
-      west - padLon, south - padLat, east + padLon, north + padLat
-    ),
-    duration: 1.5
-  })
   viewer.scene.requestRender()
 }
 
@@ -232,7 +273,9 @@ function drawInundation() {
   })
 }
 
-watch(() => props.track, drawTrack, { deep: true })
+watch(() => props.track, () => drawTrack(true), { deep: true })
+// 拖动进度条只重绘路径与台风中心，不移动镜头
+watch(() => props.simIndex, () => drawTrack(false))
 watch(() => props.inundation, drawInundation, { deep: true })
 
 /** 创建 Viewer 并挂上底图、岛形、轨迹与相机控制 */
