@@ -93,11 +93,19 @@
     <div class="bottom-row">
       <div class="tech-panel chart-panel">
         <div class="panel-title">路径过程风速 / 气压变化</div>
-        <ChartBox :option="intensityOption" height="240px" />
+        <ChartBox
+          :option="intensityOption"
+          height="240px"
+          explain="柱状为逐时次最大风速，折线为中心气压（对应右侧纵轴）。气压越低、风速越高，说明台风越强，两条曲线通常同步升降。最右侧几个时次为路径预报值，越往后预报的不确定性越大。"
+        />
       </div>
       <div class="tech-panel chart-panel">
         <div class="panel-title">大风风圈半径演变（km）</div>
-        <ChartBox :option="radiusOption" height="240px" />
+        <ChartBox
+          :option="radiusOption"
+          height="240px"
+          explain="七级风圈半径随时间的变化，数值越大表示大风影响范围越广，船只与沿海设施需要更早避风。预报时次没有实测风圈，折线在实况末尾中断属正常现象。"
+        />
       </div>
     </div>
   </div>

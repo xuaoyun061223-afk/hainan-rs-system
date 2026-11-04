@@ -37,7 +37,11 @@
       <div class="side-col">
         <div class="tech-panel chart-panel">
           <div class="panel-title">各卫星归档占比</div>
-          <ChartBox :option="pieOption" height="250px" />
+          <ChartBox
+            :option="pieOption"
+            height="250px"
+            explain="各卫星已归档影像数量的占比，可直观看出哪颗卫星是主力数据源。若占比过度集中在少数卫星上，说明数据来源依赖较单一，建议结合多源影像交叉验证。"
+          />
         </div>
         <div class="tech-panel access-panel">
           <div class="panel-title">数据接入通道</div>
