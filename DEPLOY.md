@@ -71,6 +71,10 @@ python scripts/sync_data.py    # 采集 → 提交 → 推送 → 调用 Deploy 
 ## 5. 常见问题
 
 - **HTTP 404 / 触发失败**：hook 被删除或地址复制不全，重新创建并更新 secret。
+- **`Account credit usage exceeded - new deploys are blocked until credits are added`**：
+  账号额度用尽，Netlify 会拦截**所有**发布（构建、Deploy Hook、`netlify deploy` 手动上传都会被拒，
+  部署记录里显示 `Skipped due to account credit usage exceeded`）。在 Billing 购买 credits / 升级套餐，
+  或等下一个计费周期重置（本账号周期为每月 26 日）即可恢复；额度恢复后用第 3 节或下面的命令直接发布。
 - **Netlify 面板显示构建被跳过**：检查是否还有额度（Free 计划每月 300 build minutes），
   或在 **Build & deploy** → **Build settings** 里确认未暂停自动构建。
 - **hook 触发了但构建失败**：说明发布链路已通，问题在构建本身，看 Deploys 里的构建日志。
