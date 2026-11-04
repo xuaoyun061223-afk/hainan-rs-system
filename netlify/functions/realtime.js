@@ -151,10 +151,59 @@ export async function getTyphoonInfo(tfid) {
   })
 }
 
-/** 把台风网轨迹点映射为本系统前端约定的 {t, lon, lat, grade, wind, pressure, radius} */
+/**
+ * 从各机构预报里挑「时效最长」的一组（并列时优先中国气象局）。
+ * 台风网的中国预报通常只到 24 小时，日本/香港/美国常给到 48-72 小时，
+ * 取最长的一组才能覆盖「往后几日」的路径。
+ */
+function pickForecastGroup(groups) {
+  const cands = (Array.isArray(groups) ? groups : []).filter(
+    (g) => g && Array.isArray(g.forecastpoints) && g.forecastpoints.length
+  )
+  if (!cands.length) return null
+  const prefer = ['中国', '日本', '中国香港', '美国', '中国台湾']
+  const score = (g) => {
+    const times = g.forecastpoints.map((p) => String((p && p.time) || ''))
+    const idx = prefer.indexOf(g.tm)
+    return { last: times.sort().pop() || '', rank: idx === -1 ? prefer.length : idx }
+  }
+  return cands.reduce((best, g) => {
+    const a = score(g)
+    const b = score(best)
+    if (a.last > b.last) return g
+    if (a.last === b.last && a.rank < b.rank) return g
+    return best
+  })
+}
+
+/**
+ * 取最后一个实况时次的路径预报点（时效最长的一家机构）。
+ * forecastpoints 里第一点通常等于当前实况位置，按时间过滤掉，避免与实况重复。
+ */
+function forecastPoints(lastRaw) {
+  if (!lastRaw || typeof lastRaw !== 'object') return []
+  const group = pickForecastGroup(lastRaw.forecast)
+  if (!group) return []
+  const lastTime = String(lastRaw.time || '')
+  return group.forecastpoints
+    .filter((p) => p && String(p.time || '') > lastTime)
+    .map((p) => ({
+      t: String(p.time || '').slice(5, 16),
+      lon: num(p.lng),
+      lat: num(p.lat),
+      grade: p.strong || '热带低压',
+      wind: num(p.speed) || 0,
+      pressure: num(p.pressure) || 0,
+      radius: 0, // 预报点没有实测风圈，置 0 表示未知
+      fc: true, // 前端据此画虚线并标注「预报」
+    }))
+    .filter((p) => Number.isFinite(p.lon) && Number.isFinite(p.lat))
+}
+
+/** 把台风网轨迹点映射为本系统前端约定的 {t, lon, lat, grade, wind, pressure, radius}，末尾接路径预报点 */
 export function mapTrackPoints(info) {
   if (!info || !Array.isArray(info.points)) return []
-  return info.points
+  const observed = info.points
     .map((p) => {
       const radius7 = String(p.radius7 || '').split('|')[0]
       return {
@@ -165,9 +214,12 @@ export function mapTrackPoints(info) {
         wind: num(p.speed),
         pressure: num(p.pressure),
         radius: num(radius7),
+        fc: false,
       }
     })
     .filter((p) => Number.isFinite(p.lon) && Number.isFinite(p.lat))
+  const lastRaw = info.points[info.points.length - 1]
+  return observed.concat(forecastPoints(lastRaw))
 }
 
 const LEVEL_BY_WARN = { 4: '红色', 3: '橙色', 2: '黄色', 1: '蓝色', 0: '蓝色' }

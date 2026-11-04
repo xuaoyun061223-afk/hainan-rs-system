@@ -151,8 +151,60 @@ def get_typhoon_info(tfid: str):
     return _cached(f"info:{tfid}", _TTL["typhoon_info"], load)
 
 
+def _pick_forecast_group(groups):
+    """
+    从各机构预报里挑「时效最长」的一组（并列时优先中国气象局）。
+    台风网的中国预报通常只到 24 小时，日本/香港/美国常给到 48-72 小时，
+    取最长的一组才能覆盖「往后几日」的路径。
+    """
+    cands = [g for g in groups if isinstance(g, dict) and g.get("forecastpoints")]
+    if not cands:
+        return None
+    prefer = ("中国", "日本", "中国香港", "美国", "中国台湾")
+
+    def score(g):
+        times = [str(p.get("time") or "") for p in g["forecastpoints"] if isinstance(p, dict)]
+        rank = prefer.index(g.get("tm")) if g.get("tm") in prefer else len(prefer)
+        return (max(times) if times else "", -rank)
+
+    return max(cands, key=score)
+
+
+def _forecast_points(last_raw):
+    """
+    取最后一个实况时次的路径预报点（时效最长的一家机构）。
+    forecastpoints 里第一点通常等于当前实况位置，按时间过滤掉，避免与实况重复。
+    """
+    if not isinstance(last_raw, dict):
+        return []
+    group = _pick_forecast_group(last_raw.get("forecast") or [])
+    if not group:
+        return []
+    last_time = str(last_raw.get("time") or "")
+    out = []
+    for p in group.get("forecastpoints") or []:
+        if not isinstance(p, dict) or str(p.get("time") or "") <= last_time:
+            continue
+        lon, lat = _num(p.get("lng")), _num(p.get("lat"))
+        if lon is None or lat is None:
+            continue
+        out.append(
+            {
+                "t": str(p.get("time") or "")[5:16],
+                "lon": lon,
+                "lat": lat,
+                "grade": p.get("strong") or "热带低压",
+                "wind": _num(p.get("speed")) or 0,
+                "pressure": _num(p.get("pressure")) or 0,
+                "radius": 0,          # 预报点没有实测风圈，置 0 表示未知
+                "fc": True,           # 前端据此画虚线并标注「预报」
+            }
+        )
+    return out
+
+
 def map_track_points(info):
-    """把台风网轨迹点映射为前端约定的 {t, lon, lat, grade, wind, pressure, radius}"""
+    """把台风网轨迹点映射为前端约定的 {t, lon, lat, grade, wind, pressure, radius}，末尾接路径预报点"""
     if not info or not isinstance(info.get("points"), list):
         return []
     out = []
@@ -170,8 +222,11 @@ def map_track_points(info):
                 "wind": _num(p.get("speed")) or 0,
                 "pressure": _num(p.get("pressure")) or 0,
                 "radius": _num(radius7) or 0,
+                "fc": False,
             }
         )
+    if info["points"]:
+        out.extend(_forecast_points(info["points"][-1]))
     return out
 
 

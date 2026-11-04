@@ -26,7 +26,7 @@
       <div class="tech-panel map-panel">
         <div class="panel-title">
           {{ active.name }} 三维路径与风圈
-          <span class="map-tip">Cesium 三维地球 · 路径分段着色 · 登陆点风圈</span>
+          <span class="map-tip">实况实线 · 预报虚线 · 拖动下方进度条回放</span>
         </div>
         <div class="map-container">
           <CesiumGlobe :track="track" :show-wind-circle="true" :sim-index="simIndex" />
@@ -36,9 +36,14 @@
           <div class="sim-head">
             <span class="sim-title">路径模拟</span>
             <span v-if="simPoint.t" class="sim-now">
-              {{ simPoint.t }} · {{ simPoint.grade }} · {{ simPoint.wind }} m/s · 风圈 {{ simPoint.radius }} km
+              <em v-if="simPoint.fc" class="sim-fc">预报</em>{{ simPoint.t }} · {{ simPoint.grade }} ·
+              {{ simPoint.wind }} m/s · 风圈 {{ simPoint.radius > 0 ? simPoint.radius + ' km' : '—' }}
             </span>
-            <span class="sim-step">{{ simIndex + 1 }} / {{ track.length || 0 }}</span>
+            <span class="sim-step">
+              <span v-if="fcDays" class="sim-fc-range">预报覆盖 {{ fcDays }} 天</span>
+              <span class="sim-split">实况 {{ obsCount }} · 预报 {{ fcCount }}</span>
+              {{ simIndex + 1 }} / {{ track.length || 0 }}
+            </span>
           </div>
           <div class="sim-slider">
             <span class="sim-edge">{{ firstT }}</span>
@@ -48,6 +53,7 @@
               :max="Math.max(0, track.length - 1)"
               :show-tooltip="false"
               :disabled="!track.length"
+              :marks="dayMarks"
               class="sim-range"
             />
             <span class="sim-edge">{{ lastT }}</span>
@@ -114,9 +120,38 @@ const simIndex = ref(0)
 const simPoint = computed(
   () => track.value[Math.min(simIndex.value, track.value.length - 1)] || {}
 )
+// 实况 / 预报点数，用于在进度条上说明「往后几日的预报段」
+const fcCount = computed(() => track.value.filter((p) => p.fc).length)
+const obsCount = computed(() => track.value.length - fcCount.value)
 const firstT = computed(() => (track.value[0]?.t || '').replace(' 登陆', '') || '—')
 const lastT = computed(
   () => (track.value[track.value.length - 1]?.t || '').replace(' 登陆', '') || '—'
+)
+// 进度条日期刻度：每天首个时次标注日期，预报段（未来日期）标橙色
+// 最后一点已有右侧结束时间标签，跳过避免与它重叠
+const dayMarks = computed(() => {
+  const marks = {}
+  let lastDate = (track.value[0]?.t || '').slice(0, 5)
+  const lastIndex = track.value.length - 1
+  track.value.forEach((p, i) => {
+    const date = (p.t || '').slice(0, 5)
+    if (!i || !date || date === lastDate) return
+    lastDate = date
+    if (i === lastIndex) return
+    marks[i] = {
+      label: date,
+      style: {
+        color: p.fc ? '#ffb02e' : '#8fb4d9',
+        fontSize: '10px',
+        whiteSpace: 'nowrap'
+      }
+    }
+  })
+  return marks
+})
+// 预报覆盖的自然日数，用于说明「往后几日」的预测跨度
+const fcDays = computed(
+  () => new Set(track.value.filter((p) => p.fc).map((p) => (p.t || '').slice(0, 5))).size
 )
 
 const active = computed(
@@ -140,8 +175,10 @@ const riskLevel = computed(() => {
 
 async function load(id) {
   track.value = await fetchTyphoonTrack(id)
-  // 切换台风后回到最新时次（实况位置），同时触发地图对准该台风
-  simIndex.value = Math.max(0, track.value.length - 1)
+  // 默认停在最新实况时次：地图对准台风当前位置（而不是最远的预报点），
+  // 向右拖动进度条即进入后面几日的预报段
+  const fc = track.value.filter((p) => p.fc).length
+  simIndex.value = Math.max(0, track.value.length - 1 - fc)
 }
 
 function onSelect(row) {
@@ -217,7 +254,8 @@ const radiusOption = computed(() => ({
   series: [
     {
       type: 'line', smooth: true, symbol: 'circle', symbolSize: 8,
-      data: track.value.map((p) => p.radius),
+      // 预报时次没有实测风圈，用 null 断开折线，避免误显示为 0
+      data: track.value.map((p) => (p.fc ? null : p.radius)),
       lineStyle: { width: 2.5, color: '#ff5c5c' }, itemStyle: { color: '#ff5c5c' },
       areaStyle: {
         color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
@@ -273,7 +311,8 @@ onMounted(async () => {
 /* 路径模拟进度条 */
 .sim-bar {
   flex: 0 0 auto;
-  padding: 6px 14px 2px;
+  /* 底部留白给进度条上的日期刻度文字 */
+  padding: 6px 14px 24px;
   border-top: 1px solid rgba(64, 158, 255, 0.18);
   background: rgba(6, 20, 42, 0.55);
 }
@@ -281,6 +320,14 @@ onMounted(async () => {
 .sim-title { color: #00e5ff; font-weight: 600; }
 .sim-now { color: #eaf4ff; }
 .sim-step { margin-left: auto; color: var(--text-sub); font-variant-numeric: tabular-nums; }
+.sim-fc-range { margin-right: 10px; color: #ffb02e; }
+.sim-split { margin-right: 10px; color: #8fb4d9; }
+.sim-fc {
+  margin-right: 6px; padding: 0 4px;
+  font-style: normal; font-size: 11px;
+  color: #ffb02e; border: 1px solid rgba(255, 176, 46, 0.45);
+  border-radius: 3px; background: rgba(255, 176, 46, 0.12);
+}
 .sim-slider { display: flex; align-items: center; gap: 8px; }
 .sim-edge { font-size: 11px; color: var(--text-sub); font-variant-numeric: tabular-nums; }
 :deep(.sim-range) { flex: 1; }
@@ -296,6 +343,7 @@ onMounted(async () => {
   box-shadow: 0 0 8px rgba(0, 229, 255, 0.55);
 }
 :deep(.sim-range .el-slider__button-wrapper) { top: -15px; }
+:deep(.sim-range .el-slider__marks-text) { margin-top: 12px; font-size: 10px; }
 :deep(.sim-range.is-disabled .el-slider__button) { border-color: #52708f; box-shadow: none; }
 .detail-col { min-height: 0; }
 .detail-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }

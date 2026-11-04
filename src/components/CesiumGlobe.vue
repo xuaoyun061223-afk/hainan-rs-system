@@ -77,17 +77,17 @@ function drawTrack(fly = true) {
     Cesium.Cartesian3.fromDegrees(p.lon, p.lat, 2000)
   )
 
-  // 分段彩色路径线
+  // 分段彩色路径线：实况为发光实线，预报段为同色虚线
   for (let i = 0; i < positions.length - 1; i++) {
-    const color = gradeColor(props.track[i + 1].grade)
+    const next = shown[i + 1]
+    const color = gradeColor(next.grade)
     const line = viewer.entities.add({
       polyline: {
         positions: [positions[i], positions[i + 1]],
-        width: 4,
-        material: new Cesium.PolylineGlowMaterialProperty({
-          glowPower: 0.3,
-          color: color
-        }),
+        width: next.fc ? 3 : 4,
+        material: next.fc
+          ? new Cesium.PolylineDashMaterialProperty({ color: color, dashLength: 18 })
+          : new Cesium.PolylineGlowMaterialProperty({ glowPower: 0.3, color: color }),
         clampToGround: false
       }
     })
@@ -127,15 +127,16 @@ function drawTrack(fly = true) {
       const point = viewer.entities.add({
         position: Cesium.Cartesian3.fromDegrees(p.lon, p.lat, 2000),
         point: {
-          pixelSize: 8,
-          color: color,
+          // 预报点：更小、半透明，与实况点区分
+          pixelSize: p.fc ? 7 : 8,
+          color: p.fc ? color.withAlpha(0.55) : color,
           outlineColor: Cesium.Color.WHITE,
           outlineWidth: 1
         },
         label: {
           text: p.t,
           font: '11px sans-serif',
-          fillColor: Cesium.Color.fromCssColorString('#9fc4ef'),
+          fillColor: Cesium.Color.fromCssColorString(p.fc ? '#7f9cbd' : '#9fc4ef'),
           outlineColor: Cesium.Color.BLACK,
           outlineWidth: 1,
           style: Cesium.LabelStyle.FILL_AND_OUTLINE,
@@ -160,7 +161,7 @@ function drawTrack(fly = true) {
       disableDepthTestDistance: Number.POSITIVE_INFINITY
     },
     label: {
-      text: `${centerPt.t || ''} ${centerPt.grade || ''}`.trim(),
+      text: `${centerPt.t || ''} ${centerPt.grade || ''}${centerPt.fc ? ' · 预报' : ''}`.trim(),
       font: '13px sans-serif',
       fillColor: Cesium.Color.WHITE,
       outlineColor: Cesium.Color.BLACK,
@@ -174,8 +175,8 @@ function drawTrack(fly = true) {
   })
   trackEntities.push(centerEntity)
 
-  // 七级风圈：跟随台风当前时次中心（原来固定画在登陆点，模拟时看起来不动）
-  if (props.showWindCircle && Number.isFinite(centerPt.radius)) {
+  // 七级风圈：跟随台风当前时次中心（预报点没有实测风圈，radius=0 时不画）
+  if (props.showWindCircle && Number.isFinite(centerPt.radius) && centerPt.radius > 0) {
     const circle = viewer.entities.add({
       position: Cesium.Cartesian3.fromDegrees(centerPt.lon, centerPt.lat, 100),
       ellipse: {
@@ -190,9 +191,9 @@ function drawTrack(fly = true) {
     trackEntities.push(circle)
   }
 
-  // 相机取景：切换台风时以「当前时次 + 最近 5 个路径点」取景，视野 8°×6° ~ 16°×10°；
-  // 拖动进度条时不做大幅飞行动画，只以固定 8°×6° 视野轻推镜头跟随台风中心，
-  // 这样回放时台风始终在画面中央，又不会每次滑动都大幅缩放。
+  // 相机取景：切换台风时以「当前时次 + 最近 5 个路径点」取景（不设最大跨度，
+  // 预报段若跨越大范围就自动拉远，保证路径始终在画面内）；
+  // 拖动进度条时以固定 8°×6° 视野轻推镜头跟随台风中心，回放时不来回缩放。
   if (Number.isFinite(centerPt.lon) && Number.isFinite(centerPt.lat)) {
     const MIN_SPAN_LON = 8
     const MIN_SPAN_LAT = 6
@@ -202,8 +203,6 @@ function drawTrack(fly = true) {
     let north = centerPt.lat + MIN_SPAN_LAT / 2
     if (fly) {
       const tail = shown.slice(Math.max(0, current - 5))
-      const MAX_SPAN_LON = 16
-      const MAX_SPAN_LAT = 10
       const lons = tail.map((p) => p.lon).filter((v) => Number.isFinite(v))
       const lats = tail.map((p) => p.lat).filter((v) => Number.isFinite(v))
       lons.forEach((v) => {
@@ -214,17 +213,21 @@ function drawTrack(fly = true) {
         south = Math.min(south, v - 0.5)
         north = Math.max(north, v + 0.5)
       })
-      if (east - west > MAX_SPAN_LON) {
-        west = centerPt.lon - MAX_SPAN_LON / 2
-        east = centerPt.lon + MAX_SPAN_LON / 2
-      }
-      if (north - south > MAX_SPAN_LAT) {
-        south = centerPt.lat - MAX_SPAN_LAT / 2
-        north = centerPt.lat + MAX_SPAN_LAT / 2
-      }
     }
+    // 用显式的「中心点 + 高度 + 垂直俯视」代替 Rectangle 取景：
+    // Rectangle 在跨度很大（预报点跳到高纬度）时视点角度不稳定，这里按跨度算高度，
+    // 保证「当前时次 + 最近几个路径点」都在画面内。
+    const cx = (west + east) / 2
+    const cy = (south + north) / 2
+    const span = Math.max(east - west, (north - south) * 1.2)
+    const height = Math.max(300000, span * 111000 * 0.85)
     viewer.camera.flyTo({
-      destination: Cesium.Rectangle.fromDegrees(west, south, east, north),
+      destination: Cesium.Cartesian3.fromDegrees(cx, cy, height),
+      orientation: {
+        heading: 0,
+        pitch: Cesium.Math.toRadians(-90),
+        roll: 0
+      },
       duration: fly ? 1.2 : 0.4
     })
   }
