@@ -31,6 +31,7 @@
           <ChartBox
             :option="gradePie"
             height="230px"
+            guide-id="water-grade"
             explain="环形图统计近岸监测站的水质类别占比：一类（绿）最清洁，二类（蓝）良好，三类（黄）一般，劣四类（红）污染较重。绿色与蓝色合计越高说明近岸海水越干净；红色比例上升多与陆源排污、养殖密集或台风后底泥扰动有关。"
           />
         </div>
@@ -39,6 +40,7 @@
           <ChartBox
             :option="weeklyBar"
             height="230px"
+            guide-id="satellite-week"
             explain="每天接入的光学影像（蓝）与 SAR 影像（青）堆叠显示。光学影像依赖晴空，阴雨天偏少；SAR 可穿云全天候成像，因此雨天占比更高。柱子越高代表当日可用影像越多，连续低柱说明遇上持续阴雨或数据通道延迟。"
           />
         </div>
@@ -74,6 +76,7 @@
           <ChartBox
             :option="chlaRank"
             height="230px"
+            guide-id="chla-rank"
             explain="按各监测站叶绿素 a 浓度从高到低排列，颜色代表风险等级：绿为低、橙为中、红为高。叶绿素 a 反映水中浮游植物（藻类）数量，浓度越高水体越富营养，橙色以上需关注赤潮风险。"
           />
         </div>

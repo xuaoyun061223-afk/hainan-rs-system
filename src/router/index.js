@@ -36,6 +36,12 @@ const routes = [
         name: 'DataCenter',
         component: () => import('@/views/DataCenter.vue'),
         meta: { title: '多源卫星数据中心', icon: 'Files' }
+      },
+      {
+        path: 'guide',
+        name: 'ChartGuide',
+        component: () => import('@/views/ChartGuide.vue'),
+        meta: { title: '图表详细说明' }
       }
     ]
   }

@@ -1,12 +1,13 @@
 <template>
   <div class="chart-box" :style="{ height: height }">
     <div ref="chartEl" class="chart-canvas"></div>
-    <!-- 数据解读：仅当传入 explain 时出现，鼠标悬停展开说明，移出自动收起 -->
+    <!-- 数据解读：仅当传入 explain 时出现，鼠标悬停展开说明，点击卡片跳转详细说明页 -->
     <div v-if="explain" class="chart-explain">
       <span class="explain-trigger">数据解读</span>
-      <div class="explain-pop">
+      <div class="explain-pop" @click="goGuide">
         <div class="explain-title">数据解读</div>
         <p class="explain-text">{{ explain }}</p>
+        <div v-if="guideId" class="explain-more">点击查看详细说明 →</div>
       </div>
     </div>
   </div>
@@ -14,14 +15,24 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
 
 const props = defineProps({
   option: { type: Object, required: true },
   height: { type: String, default: '260px' },
-  // 图表解读文案：传入后面板标题行右侧出现「数据解读」小按钮
-  explain: { type: String, default: '' }
+  // 图表解读文案：传入后，面板标题行右侧出现「数据解读」小按钮
+  explain: { type: String, default: '' },
+  // 详细说明页的图表标识：传入后点击解读卡片可跳转到对应说明
+  guideId: { type: String, default: '' }
 })
+
+const router = useRouter()
+
+function goGuide() {
+  if (!props.guideId) return
+  router.push({ path: '/guide', query: { chart: props.guideId } })
+}
 
 const chartEl = ref(null)
 let chart = null
@@ -105,7 +116,7 @@ onBeforeUnmount(() => {
   visibility: hidden;
   transform: translateY(4px);
   transition: opacity 0.18s, transform 0.18s, visibility 0.18s;
-  pointer-events: none;
+  cursor: pointer;
 }
 .chart-explain:hover .explain-pop,
 .chart-explain:focus-within .explain-pop {
@@ -121,5 +132,15 @@ onBeforeUnmount(() => {
 }
 .explain-text {
   margin: 0;
+}
+.explain-more {
+  margin-top: 6px;
+  padding-top: 5px;
+  font-size: 11px;
+  color: #00e5ff;
+  border-top: 1px dashed rgba(0, 229, 255, 0.25);
+}
+.explain-pop:hover .explain-more {
+  text-decoration: underline;
 }
 </style>

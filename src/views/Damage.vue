@@ -143,6 +143,7 @@
             v-if="!assessment.assessmentOnly"
             :option="damagePie"
             height="100%"
+            guide-id="damage-buildings"
             explain="基于 xBD 模型的建筑损毁分级占比，从完好到完全摧毁依次着色。红色（严重损坏 / 完全摧毁）扇区越大，说明台风对建筑的破坏越重；弱台风时该扇区很小，可结合右侧市县统计表查看具体分布。"
           />
           <div v-else class="empty-hint">{{ notLandedLabel }}，暂无建筑损毁统计</div>
@@ -155,6 +156,7 @@
             v-if="!assessment.assessmentOnly"
             :option="ndviOption"
             height="100%"
+            guide-id="damage-ndvi"
             explain="台风登陆前后的 NDVI（植被绿度）均值时序：绿线为灾前、橙线为灾后，红色虚线为登陆日期。灾后曲线明显下降表示植被受损，之后回升的快慢取决于台风强度与后续天气条件。"
           />
           <div v-else class="empty-hint">{{ notLandedLabel }}，暂无过境前后 NDVI 对比</div>

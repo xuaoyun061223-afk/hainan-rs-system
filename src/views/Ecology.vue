@@ -40,6 +40,7 @@
           <ChartBox
             :option="trendOption"
             height="220px"
+            guide-id="ecology-trend"
             explain="所选站点与指标（叶绿素 a / 悬浮泥沙 / 海表温度）的逐月均值折线，用于观察季节变化。夏季水温高、降水多时叶绿素与悬浮泥沙通常明显升高；突起的峰值对应异常月份，可结合台风或强降雨事件对照查看。"
           />
         </div>
@@ -48,6 +49,7 @@
           <ChartBox
             :option="shorelineOption"
             height="220px"
+            guide-id="shoreline-rate"
             explain="各典型岸段的年平均冲淤速率：柱子位于零线上方（绿）表示淤积、岸线向海推进，位于零线下方（红）表示侵蚀、岸线后退。负值越大侵蚀越严重，是防护工程需要优先关注的位置。"
           />
         </div>
@@ -58,6 +60,7 @@
           <ChartBox
             :option="gaugeOption"
             height="220px"
+            guide-id="redtide-gauge"
             explain="结合叶绿素 a、海表温度、营养盐等因子综合计算的赤潮风险指数（0–100）：绿色区间为低风险，黄色为中等，红色为高风险。指针超过 70 时建议加密监测并提前发布预警。"
           />
         </div>
@@ -66,6 +69,7 @@
           <ChartBox
             :option="mangroveOption"
             height="220px"
+            guide-id="mangrove-area"
             explain="历年红树林面积变化折线。整体上行说明保护与修复措施见效；若某年出现下降，多与台风破坏、围垦或养殖占用有关。面积由多期遥感反演得到，看趋势比看单年数值更可靠。"
           />
         </div>

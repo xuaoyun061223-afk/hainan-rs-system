@@ -40,6 +40,7 @@
           <ChartBox
             :option="pieOption"
             height="250px"
+            guide-id="archive-pie"
             explain="各卫星已归档影像数量的占比，可直观看出哪颗卫星是主力数据源。若占比过度集中在少数卫星上，说明数据来源依赖较单一，建议结合多源影像交叉验证。"
           />
         </div>
