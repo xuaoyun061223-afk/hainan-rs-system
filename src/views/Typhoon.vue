@@ -97,6 +97,7 @@
           :option="intensityOption"
           height="240px"
           guide-id="typhoon-intensity"
+          hover-id="typhoon-intensity"
           explain="柱状为逐时次最大风速，折线为中心气压（对应右侧纵轴）。气压越低、风速越高，说明台风越强，两条曲线通常同步升降。最右侧几个时次为路径预报值，越往后预报的不确定性越大。"
         />
       </div>
@@ -106,6 +107,7 @@
           :option="radiusOption"
           height="240px"
           guide-id="typhoon-radius"
+          hover-id="typhoon-radius"
           explain="七级风圈半径随时间的变化，数值越大表示大风影响范围越广，船只与沿海设施需要更早避风。预报时次没有实测风圈，折线在实况末尾中断属正常现象。"
         />
       </div>
@@ -244,7 +246,7 @@ const intensityOption = computed(() => ({
       }
     },
     {
-      name: '中心气压', type: 'line', yAxisIndex: 1, smooth: true,
+      name: '中心气压', type: 'line', yAxisIndex: 1, smooth: true, triggerLineEvent: true,
       symbol: 'circle', symbolSize: 7, data: track.value.map((p) => p.pressure),
       lineStyle: { width: 2.5, color: '#00e5ff' }, itemStyle: { color: '#00e5ff' }
     }
@@ -263,7 +265,7 @@ const radiusOption = computed(() => ({
   yAxis: { type: 'value', ...axisStyle },
   series: [
     {
-      type: 'line', smooth: true, symbol: 'circle', symbolSize: 8,
+      type: 'line', name: '七级风圈半径', smooth: true, symbol: 'circle', symbolSize: 8, triggerLineEvent: true,
       // 预报时次没有实测风圈，用 null 断开折线，避免误显示为 0
       data: track.value.map((p) => (p.fc ? null : p.radius)),
       lineStyle: { width: 2.5, color: '#ff5c5c' }, itemStyle: { color: '#ff5c5c' },

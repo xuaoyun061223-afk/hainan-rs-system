@@ -41,6 +41,7 @@
             :option="trendOption"
             height="220px"
             guide-id="ecology-trend"
+            hover-id="ecology-trend"
             explain="所选站点与指标（叶绿素 a / 悬浮泥沙 / 海表温度）的逐月均值折线，用于观察季节变化。夏季水温高、降水多时叶绿素与悬浮泥沙通常明显升高；突起的峰值对应异常月份，可结合台风或强降雨事件对照查看。"
           />
         </div>
@@ -50,6 +51,7 @@
             :option="shorelineOption"
             height="220px"
             guide-id="shoreline-rate"
+            hover-id="shoreline-rate"
             explain="各典型岸段的年平均冲淤速率：柱子位于零线上方（绿）表示淤积、岸线向海推进，位于零线下方（红）表示侵蚀、岸线后退。负值越大侵蚀越严重，是防护工程需要优先关注的位置。"
           />
         </div>
@@ -61,6 +63,7 @@
             :option="gaugeOption"
             height="220px"
             guide-id="redtide-gauge"
+            hover-id="redtide-gauge"
             explain="结合叶绿素 a、海表温度、营养盐等因子综合计算的赤潮风险指数（0–100）：绿色区间为低风险，黄色为中等，红色为高风险。指针超过 70 时建议加密监测并提前发布预警。"
           />
         </div>
@@ -70,6 +73,7 @@
             :option="mangroveOption"
             height="220px"
             guide-id="mangrove-area"
+            hover-id="mangrove-area"
             explain="历年红树林面积变化折线。整体上行说明保护与修复措施见效；若某年出现下降，多与台风破坏、围垦或养殖占用有关。面积由多期遥感反演得到，看趋势比看单年数值更可靠。"
           />
         </div>
@@ -146,7 +150,7 @@ const trendOption = computed(() => {
     xAxis: { type: 'category', data: chlaData.value.months.length ? chlaData.value.months : monthLabels, ...axisStyle },
     yAxis: { type: 'value', name: metricMeta[metric.value].unit, nameTextStyle: { color: '#8aa6c8' }, ...axisStyle },
     series: [{
-      type: 'line', data: values, smooth: true, symbol: 'circle', symbolSize: 7,
+      type: 'line', name: metricLabel.value, data: values, smooth: true, symbol: 'circle', symbolSize: 7, triggerLineEvent: true,
       lineStyle: { width: 2.5, color: '#00e5ff' },
       itemStyle: { color: '#00e5ff' },
       areaStyle: {
@@ -164,7 +168,12 @@ const shorelineOption = computed(() => ({
   yAxis: { type: 'value', ...axisStyle },
   series: [{
     type: 'bar',
-    data: shorelineChange.value.map((s) => ({ value: s.rate, itemStyle: { color: s.rate < 0 ? '#ff5c5c' : '#2ee6a6' } })),
+    data: shorelineChange.value.map((s) => ({
+      value: s.rate,
+      // 悬停图片按冲淤方向取：侵蚀 / 淤积
+      __media: s.rate < 0 ? 'erosion' : 'accretion',
+      itemStyle: { color: s.rate < 0 ? '#ff5c5c' : '#2ee6a6' }
+    })),
     barWidth: 16,
     markLine: { symbol: 'none', lineStyle: { color: '#8aa6c8', type: 'dashed' }, data: [{ yAxis: 0 }] }
   }]
@@ -172,6 +181,8 @@ const shorelineOption = computed(() => ({
 
 const gaugeOption = computed(() => {
   const riskVal = { 低: 28, 中: 62, 高: 86 }[current.value?.risk] || 28
+  // 悬停图片按当前风险等级取
+  const riskKey = { 低: 'risk-low', 中: 'risk-mid', 高: 'risk-high' }[current.value?.risk] || 'risk-low'
   return {
     series: [{
       type: 'gauge', min: 0, max: 100, radius: '92%',
@@ -182,7 +193,7 @@ const gaugeOption = computed(() => {
       axisLabel: { color: '#8aa6c8', fontSize: 10, distance: 14 },
       pointer: { width: 4 },
       detail: { valueAnimation: true, formatter: '{value}', color: '#eaf4ff', fontSize: 26, offsetCenter: [0, '38%'] },
-      data: [{ value: riskVal }]
+      data: [{ value: riskVal, __media: riskKey }]
     }]
   }
 })
@@ -193,7 +204,7 @@ const mangroveOption = computed(() => ({
   xAxis: { type: 'category', data: mangroveArea.value.map((m) => m.year), ...axisStyle },
   yAxis: { type: 'value', min: 38, ...axisStyle },
   series: [{
-    type: 'line', data: mangroveArea.value.map((m) => m.area), smooth: true,
+    type: 'line', name: '红树林面积', data: mangroveArea.value.map((m) => m.area), smooth: true, triggerLineEvent: true,
     symbol: 'circle', symbolSize: 8, lineStyle: { width: 2.5, color: '#2ee6a6' },
     itemStyle: { color: '#2ee6a6' },
     label: { show: true, color: '#9fc4ef', fontSize: 10 },

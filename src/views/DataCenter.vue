@@ -41,6 +41,7 @@
             :option="pieOption"
             height="250px"
             guide-id="archive-pie"
+            hover-id="archive-pie"
             explain="各卫星已归档影像数量的占比，可直观看出哪颗卫星是主力数据源。若占比过度集中在少数卫星上，说明数据来源依赖较单一，建议结合多源影像交叉验证。"
           />
         </div>
@@ -85,6 +86,13 @@ const todayNew = computed(() => {
 
 const palette = ['#2f9bff', '#00e5ff', '#2ee6a6', '#ffb02e', '#ff9c40', '#ff5c5c', '#9254de', '#36cfc9', '#ff85c0']
 
+// 悬停示意图按卫星类型取：SAR / 光学（Sentinel-2、Landsat）/ 其他国产高分影像
+function mediaKey(sat) {
+  if (/Sentinel-1|GF-3|SAR/i.test(sat)) return 's1'
+  if (/Sentinel-2|Landsat/i.test(sat)) return 's2'
+  return 'gf'
+}
+
 const pieOption = computed(() => ({
   tooltip: { trigger: 'item', formatter: '{b}<br/>{c} 景 ({d}%)' },
   legend: { type: 'scroll', orient: 'vertical', right: 0, top: 'middle', textStyle: { color: '#8aa6c8', fontSize: 11 }, itemWidth: 10, itemHeight: 10 },
@@ -92,7 +100,7 @@ const pieOption = computed(() => ({
   series: [{
     type: 'pie', radius: ['38%', '66%'], center: ['34%', '50%'],
     label: { show: false },
-    data: catalog.value.map((c) => ({ name: c.sat, value: c.scenes }))
+    data: catalog.value.map((c) => ({ name: c.sat, value: c.scenes, __media: mediaKey(c.sat) }))
   }]
 }))
 

@@ -144,6 +144,7 @@
             :option="damagePie"
             height="100%"
             guide-id="damage-buildings"
+            hover-id="damage-buildings"
             explain="基于 xBD 模型的建筑损毁分级占比，从完好到完全摧毁依次着色。红色（严重损坏 / 完全摧毁）扇区越大，说明台风对建筑的破坏越重；弱台风时该扇区很小，可结合右侧市县统计表查看具体分布。"
           />
           <div v-else class="empty-hint">{{ notLandedLabel }}，暂无建筑损毁统计</div>
@@ -157,6 +158,7 @@
             :option="ndviOption"
             height="100%"
             guide-id="damage-ndvi"
+            hover-id="damage-ndvi"
             explain="台风登陆前后的 NDVI（植被绿度）均值时序：绿线为灾前、橙线为灾后，红色虚线为登陆日期。灾后曲线明显下降表示植被受损，之后回升的快慢取决于台风强度与后续天气条件。"
           />
           <div v-else class="empty-hint">{{ notLandedLabel }}，暂无过境前后 NDVI 对比</div>
@@ -335,11 +337,11 @@ const ndviOption = computed(() => {
     yAxis: { type: 'value', min: 0.4, max: 0.85, ...axisStyle },
     series: [
       {
-        name: '灾前 NDVI', type: 'line', smooth: true, connectNulls: false,
+        name: '灾前 NDVI', type: 'line', smooth: true, connectNulls: false, triggerLineEvent: true,
         data: n.before, lineStyle: { width: 2.5, color: '#2ee6a6' }, itemStyle: { color: '#2ee6a6' }
       },
       {
-        name: '灾后 NDVI', type: 'line', smooth: true, connectNulls: false,
+        name: '灾后 NDVI', type: 'line', smooth: true, connectNulls: false, triggerLineEvent: true,
         data: n.after, lineStyle: { width: 2.5, color: '#ff7a45' }, itemStyle: { color: '#ff7a45' },
         markLine: {
           symbol: 'none', lineStyle: { color: '#ff5c5c', type: 'dashed' },
