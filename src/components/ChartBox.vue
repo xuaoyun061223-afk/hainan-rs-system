@@ -126,7 +126,9 @@ function showCard(params) {
 function render() {
   if (!chart) return
   hideCard()
-  chart.setOption(props.option, true)
+  // 有悬停图片时关闭 ECharts 原生 tooltip，避免白色数字标签覆盖在实景图片上
+  const opt = mediaSet.value ? { ...props.option, tooltip: { show: false } } : props.option
+  chart.setOption(opt, true)
 }
 
 onMounted(() => {
