@@ -1,8 +1,5 @@
-node_modules
-dist
-.git
-.vscode
-.env
-*.local
 **/__pycache__
 **/*.pyc
+node_modules
+.git
+.vscode

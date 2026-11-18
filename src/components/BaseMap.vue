@@ -1,11 +1,12 @@
 <template>
   <div class="base-map-wrap">
-    <div ref="mapEl" class="map-el"></div>
+    <div ref="mapEl" class="map-el" :class="baseType === 'vector' ? 'is-vector' : 'is-satellite'"></div>
     <div class="map-legend" v-if="legend.length">
       <span v-for="item in legend" :key="item.label" class="legend-item">
         <i :style="{ background: item.color }"></i>{{ item.label }}
       </span>
     </div>
+    <div class="map-credit">© Esri · HERE · Garmin · OpenStreetMap</div>
   </div>
 </template>
 
@@ -40,7 +41,7 @@ let dataLayer = null
 // 已经聚焦过的站点名，避免同一站点被反复飞过去
 let focusedStation = ''
 
-const riskColor = { 低: '#2ee6a6', 中: '#ffb02e', 高: '#ff5c5c' }
+const riskColor = { 低: '#5c9d86', 中: '#d3a24a', 高: '#c25a51' }
 const HAINAN_CENTER = [19.35, 109.85]
 const HAINAN_BOUNDS = [[18.1, 108.5], [20.25, 111.2]]
 // 视野只纳入距海南这么近的轨迹点：远海轨迹会把画面拉到整个西北太平洋，
@@ -56,26 +57,32 @@ function kmToHainan(lat, lon) {
 
 function gradeColor(grade) {
   const g = grade || ''
-  if (g.includes('超强')) return '#cf1322'
-  if (g.includes('强台风')) return '#ff4d4f'
-  if (g === '台风') return '#ff7a45'
-  if (g.includes('强热带')) return '#ff9c40'
-  return '#ffd666'
+  if (g.includes('超强')) return '#a8453d'
+  if (g.includes('强台风')) return '#bf5a4e'
+  if (g === '台风') return '#cc7a56'
+  if (g.includes('强热带')) return '#d39a5a'
+  return '#c9b27a'
 }
 
 function inundationColor(v, max) {
-  if (!max) return '#ffb02e'
+  if (!max) return '#d3a24a'
   const k = Math.min(1, v / max)
-  if (k >= 0.66) return '#ff5c5c'
-  if (k >= 0.33) return '#ff9c40'
-  return '#ffb02e'
+  if (k >= 0.66) return '#c25a51'
+  if (k >= 0.33) return '#cc7a56'
+  return '#d3a24a'
 }
 
 function buildTileLayers() {
-  vectorLayer = L.tileLayer(
-    'https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
-    { subdomains: '1234', maxZoom: 18 }
+  // 矢量底图换成 Esri 深灰画布：本身即中性暗灰，与面板配色一致，不需要反色滤镜
+  const vectorBase = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    { maxZoom: 16 }
   )
+  const vectorLabels = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+    { maxZoom: 16 }
+  )
+  vectorLayer = L.layerGroup([vectorBase, vectorLabels])
   satelliteLayer = L.tileLayer(
     'https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',
     { subdomains: '1234', maxZoom: 18 }
@@ -94,12 +101,12 @@ function drawHainan() {
     .map(([lon, lat]) => [lat, lon])
   if (latlngs.length < 3) return
   L.polygon(latlngs, {
-    color: '#00e5ff',
-    weight: 1.6,
-    opacity: 0.9,
-    fillColor: '#123f73',
+    color: '#9fc0d2',
+    weight: 1.2,
+    opacity: 0.85,
+    fillColor: '#6f9db8',
     // 只做很淡的提亮，不能压住底图海岸线与道路，否则整块陆地会糊成一团
-    fillOpacity: 0.12,
+    fillOpacity: 0.08,
     interactive: false
   }).addTo(dataLayer)
 }
@@ -108,17 +115,17 @@ function drawStations() {
   props.stations
     .filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lon))
     .forEach((s) => {
-      const color = riskColor[s.risk] || '#2f9bff'
+      const color = riskColor[s.risk] || '#6f9db8'
       const active = props.activeStation && s.name === props.activeStation
-      // 选中站点加一圈青色虚线，一眼看出当前在看哪个站
+      // 选中站点加一圈虚线，一眼看出当前在看哪个站
       if (active) {
         L.circleMarker([s.lat, s.lon], {
           radius: 16,
-          color: '#00e5ff',
-          weight: 2,
+          color: '#8ecfe0',
+          weight: 1.4,
           dashArray: '4 4',
-          fillColor: '#00e5ff',
-          fillOpacity: 0.1
+          fillColor: '#8ecfe0',
+          fillOpacity: 0.08
         }).addTo(dataLayer)
       }
       const icon = L.divIcon({
@@ -211,10 +218,10 @@ function drawInundation() {
       .map(([lon, lat]) => [lat, lon])
     if (latlngs.length < 3) return
     L.polygon(latlngs, {
-      color: '#ffb02e',
-      weight: 1.4,
-      fillColor: '#ffb02e',
-      fillOpacity: 0.3
+      color: '#d3a24a',
+      weight: 1.2,
+      fillColor: '#d3a24a',
+      fillOpacity: 0.22
     })
       .bindPopup('Sentinel-1 SAR 提取淹没区')
       .addTo(dataLayer)
@@ -287,10 +294,10 @@ function drawTrack() {
     const last = pts[pts.length - 1]
     L.circleMarker([last.lat, last.lon], {
       radius: 12,
-      color: '#00e5ff',
-      weight: 2,
-      fillColor: '#00e5ff',
-      fillOpacity: 0.22
+      color: '#8ecfe0',
+      weight: 1.6,
+      fillColor: '#8ecfe0',
+      fillOpacity: 0.16
     })
       .bindTooltip(`预警时刻位置 · ${props.focusTime}<br/>${last.t}｜${last.grade}｜${last.wind} m/s`)
       .addTo(dataLayer)
@@ -304,11 +311,11 @@ function drawTrack() {
     if (landfall && landfall.radius) {
       L.circle([landfall.lat, landfall.lon], {
         radius: landfall.radius * 1000,
-        color: '#ff5c5c',
+        color: '#c25a51',
         weight: 1,
         dashArray: '6 6',
-        fillColor: '#ff5c5c',
-        fillOpacity: 0.08
+        fillColor: '#c25a51',
+        fillOpacity: 0.06
       })
         .bindTooltip(`${landfall.radius} km 风圈`)
         .addTo(dataLayer)
@@ -475,21 +482,28 @@ onBeforeUnmount(() => {
 .map-el {
   width: 100%;
   height: 100%;
-  border-radius: 4px;
-  background: #06122a;
+  border-radius: var(--radius);
+  background: #0b1015;
+}
+/* 深灰底图略压暗，进一步贴近面板底色 */
+.map-el.is-vector :deep(.leaflet-tile-pane) {
+  filter: brightness(0.86);
+}
+.map-el.is-satellite :deep(.leaflet-tile-pane) {
+  filter: saturate(0.45) brightness(0.62) contrast(1.05);
 }
 .map-legend {
   position: absolute;
   right: 10px;
   bottom: 10px;
   z-index: 500;
-  background: rgba(6, 18, 42, 0.82);
+  background: rgba(17, 23, 29, 0.92);
   border: 1px solid var(--border-color);
-  border-radius: 4px;
-  padding: 6px 10px;
+  border-radius: var(--radius);
+  padding: 5px 9px;
   display: flex;
-  gap: 14px;
-  font-size: 12px;
+  gap: 12px;
+  font-size: 11px;
   color: var(--text-sub);
 }
 .legend-item {
@@ -503,8 +517,17 @@ onBeforeUnmount(() => {
   border-radius: 2px;
   display: inline-block;
 }
+.map-credit {
+  position: absolute;
+  left: 10px;
+  bottom: 6px;
+  z-index: 500;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.28);
+  pointer-events: none;
+}
 :deep(.city-label) {
-  color: #eaf4ff;
+  color: #e6ebef;
   font-size: 11px;
   line-height: 16px;
   text-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
@@ -514,23 +537,21 @@ onBeforeUnmount(() => {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  border: 2px solid #ff5c5c;
-  background: radial-gradient(circle, rgba(255, 92, 92, 0.55), rgba(255, 92, 92, 0.05));
-  box-shadow: 0 0 10px rgba(255, 92, 92, 0.7);
+  border: 1.5px solid #c25a51;
+  background: radial-gradient(circle, rgba(194, 90, 81, 0.42), rgba(194, 90, 81, 0.04));
 }
 :deep(.map-pin) {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  box-shadow: 0 0 8px currentColor;
-  border: 2px solid rgba(6, 18, 42, 0.9);
+  border: 2px solid rgba(11, 16, 21, 0.9);
   box-sizing: border-box;
 }
-/* 当前选中站点：放大 + 青色描边，与旁边的虚线光圈呼应 */
+/* 当前选中站点：放大 + 强调描边，与旁边的虚线光圈呼应 */
 :deep(.map-pin.is-active) {
   width: 18px;
   height: 18px;
-  border-color: #00e5ff;
-  box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.25), 0 0 14px #00e5ff;
+  border-color: #8ecfe0;
+  box-shadow: 0 0 0 3px rgba(142, 207, 224, 0.2);
 }
 </style>

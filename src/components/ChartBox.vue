@@ -165,10 +165,10 @@ onBeforeUnmount(() => {
   width: 168px;
   padding: 5px 6px 6px;
   pointer-events: none;
-  background: rgba(4, 18, 40, 0.97);
-  border: 1px solid rgba(0, 229, 255, 0.45);
-  border-radius: 7px;
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
+  background: rgba(17, 23, 29, 0.97);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
   z-index: 4;
   animation: cm-in 0.14s ease-out;
 }
@@ -191,7 +191,7 @@ onBeforeUnmount(() => {
 }
 .cm-label {
   font-size: 11px;
-  color: #8fb4d9;
+  color: var(--text-sub);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -199,7 +199,7 @@ onBeforeUnmount(() => {
 .cm-ratio {
   font-size: 12px;
   font-weight: 600;
-  color: #00e5ff;
+  color: var(--accent);
   white-space: nowrap;
 }
 .cm-frame {
@@ -210,8 +210,8 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: #04122a;
-  border-radius: 4px;
+  background: #0d1217;
+  border-radius: 2px;
 }
 .cm-frame img {
   width: 100%;
@@ -227,7 +227,7 @@ onBeforeUnmount(() => {
   margin: 5px 0 0;
   font-size: 10px;
   line-height: 1.5;
-  color: #8fb4d9;
+  color: var(--text-sub);
 }
 
 /* 触发按钮对齐到面板标题行的右侧，悬浮在图上方且不改变原有布局 */
@@ -243,20 +243,17 @@ onBeforeUnmount(() => {
   padding: 0 7px;
   font-size: 11px;
   line-height: 17px;
-  color: #7fb0dd;
+  color: var(--text-dim);
   white-space: nowrap;
-  border: 1px solid rgba(64, 158, 255, 0.35);
-  border-radius: 9px;
-  background: rgba(6, 20, 42, 0.72);
+  border: 1px solid var(--border-color);
+  border-radius: 2px;
+  background: transparent;
   cursor: help;
-  opacity: 0.62;
-  transition: color 0.15s, border-color 0.15s, opacity 0.15s, box-shadow 0.15s;
+  transition: color 0.15s, border-color 0.15s;
 }
 .chart-explain:hover .explain-trigger {
-  color: #00e5ff;
-  opacity: 1;
-  border-color: rgba(0, 229, 255, 0.6);
-  box-shadow: 0 0 8px rgba(0, 229, 255, 0.28);
+  color: var(--text-main);
+  border-color: var(--border-strong);
 }
 
 /* 悬浮说明卡片：从按钮下方展开，不参与文档流 */
@@ -265,15 +262,15 @@ onBeforeUnmount(() => {
   right: 0;
   top: calc(100% + 7px);
   width: 286px;
-  padding: 8px 11px;
+  padding: 9px 12px;
   font-size: 12px;
   line-height: 1.7;
-  color: #cfe2f7;
+  color: var(--text-main);
   text-align: left;
-  background: rgba(4, 18, 40, 0.96);
-  border: 1px solid rgba(0, 229, 255, 0.38);
-  border-radius: 6px;
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5);
+  background: #151c23;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
   opacity: 0;
   visibility: hidden;
   transform: translateY(4px);
@@ -290,17 +287,18 @@ onBeforeUnmount(() => {
   margin-bottom: 3px;
   font-size: 12px;
   font-weight: 600;
-  color: #00e5ff;
+  color: var(--text-main);
 }
 .explain-text {
   margin: 0;
+  color: var(--text-sub);
 }
 .explain-more {
-  margin-top: 6px;
-  padding-top: 5px;
+  margin-top: 7px;
+  padding-top: 6px;
   font-size: 11px;
-  color: #00e5ff;
-  border-top: 1px dashed rgba(0, 229, 255, 0.25);
+  color: var(--accent);
+  border-top: 1px solid var(--border-color);
 }
 .explain-pop:hover .explain-more {
   text-decoration: underline;

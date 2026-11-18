@@ -1,18 +1,22 @@
 /**
  * 统一数据访问层
- * USE_MOCK = false → 走 FastAPI 后端（/api 前缀由 Vite proxy 转发到 127.0.0.1:8000）
+ * USE_MOCK 由构建变量 VITE_USE_MOCK 控制：
+ *   - 本地开发默认走 FastAPI 后端（/api 前缀由 Vite proxy 转发到 127.0.0.1:8000）
+ *   - 纯静态部署时以 VITE_USE_MOCK=true 构建，改用内置演示数据
  * 页面代码统一调用本层函数，后端地址变化只需改 vite.config.js proxy。
  */
 import * as mock from '@/mock'
 
-const USE_MOCK = false
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
+// 前后端分离部署时用构建变量 VITE_API_BASE 指向后端域名；同域部署留空即可
+const API_BASE = import.meta.env.VITE_API_BASE || ''
 
 function resolve(data, delay = 120) {
   return new Promise((res) => setTimeout(() => res(data), delay))
 }
 
 function api(url) {
-  return fetch(url).then((r) => {
+  return fetch(API_BASE + url).then((r) => {
     if (!r.ok) throw new Error(`API ${r.status}: ${url}`)
     return r.json()
   })

@@ -6,8 +6,8 @@ export const useAppStore = defineStore('app', () => {
   const activeTyphoonId = ref('2411')
   // 当前选中的近岸监测站点
   const activeStation = ref('海口湾')
-  // 底图：vector 矢量 / satellite 影像
-  const baseMapType = ref('vector')
+  // 底图：satellite 影像 / vector 矢量，默认与灾害评估页一致使用影像底图
+  const baseMapType = ref('satellite')
 
   function setActiveTyphoon(id) {
     activeTyphoonId.value = id

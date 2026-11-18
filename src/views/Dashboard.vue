@@ -2,10 +2,10 @@
   <div class="dashboard" v-loading="loading">
     <!-- 顶部指标 -->
     <div class="stat-row">
-      <StatCard label="近岸监测站点" :value="stats.stationCount" unit="个" icon="Location" color="#2f9bff" sub="覆盖环岛 6 个重点海湾" />
-      <StatCard label="今日卫星过境" :value="stats.todayPasses" unit="次" icon="Position" color="#00e5ff" sub="光学 3 次 / SAR 1 次" />
-      <StatCard label="西北太平洋活跃台风" :value="stats.activeTyphoon" unit="个" icon="Guide" color="#2ee6a6" :sub="stats.activeTyphoon ? `当前 ${stats.activeTyphoon} 个活跃台风` : '当前无活跃台风'" />
-      <StatCard label="生效预警信息" :value="stats.alertCount" unit="条" icon="Bell" color="#ff5c5c" :sub="`实时生成 ${stats.alertCount} 条`" />
+      <StatCard label="近岸监测站点" :value="stats.stationCount" unit="个" icon="Location" color="#6f9db8" sub="覆盖环岛 6 个重点海湾" />
+      <StatCard label="今日卫星过境" :value="stats.todayPasses" unit="次" icon="Position" color="#7fa8bd" sub="光学 3 次 / SAR 1 次" />
+      <StatCard label="西北太平洋活跃台风" :value="stats.activeTyphoon" unit="个" icon="Guide" color="#5c9d86" :sub="stats.activeTyphoon ? `当前 ${stats.activeTyphoon} 个活跃台风` : '当前无活跃台风'" />
+      <StatCard label="生效预警信息" :value="stats.alertCount" unit="条" icon="Bell" color="#c25a51" :sub="`实时生成 ${stats.alertCount} 条`" />
     </div>
 
     <!-- 数据时效与实况 -->
@@ -93,7 +93,7 @@
               :class="{ active: focusIndex === i }"
               @click="onAlertClick(a, i)"
             >
-              <el-tag :type="levelType(a.level)" size="small" effect="dark">{{ a.level }}</el-tag>
+              <el-tag :type="levelType(a.level)" size="small" effect="plain">{{ a.level }}</el-tag>
               <div class="alert-content">
                 <div class="alert-head">{{ a.type }} · {{ a.area }}</div>
                 <div class="alert-desc">{{ a.desc }}</div>
@@ -141,45 +141,47 @@ const waterGrade = ref([])
 const liveWeather = computed(() => (stats.value.live && stats.value.live.weather) || null)
 
 const mapLegend = computed(() => [
-  { label: '低风险站', color: '#2ee6a6' },
-  { label: '中风险站', color: '#ffb02e' },
-  { label: '高风险站', color: '#ff5c5c' },
+  { label: '低风险站', color: '#5c9d86' },
+  { label: '中风险站', color: '#d3a24a' },
+  { label: '高风险站', color: '#c25a51' },
   // 一张图默认不显示台风，只有点击预警时间后才出现路径与风圈，
   // 图例跟着数据走，避免地图上没有任何轨迹却挂着「台风路径」色块
   ...(track.value.length
     ? [
-      { label: '台风路径', color: '#cf1322' },
-      { label: '风圈', color: '#ff5c5c' }
+      { label: '台风路径', color: '#a8544d' },
+      { label: '风圈', color: '#c25a51' }
     ]
     : [])
 ])
 
 const axisStyle = {
-  axisLine: { lineStyle: { color: '#2b4a76' } },
-  axisLabel: { color: '#8aa6c8', fontSize: 11 },
-  splitLine: { lineStyle: { color: 'rgba(64,158,255,0.1)' } }
+  axisLine: { lineStyle: { color: 'rgba(255,255,255,0.12)' } },
+  axisTick: { show: false },
+  axisLabel: { color: '#7f8b96', fontSize: 11 },
+  splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } }
 }
 
 const gradePie = computed(() => ({
   tooltip: { trigger: 'item', formatter: '{b}: {c}%' },
-  legend: { bottom: 0, textStyle: { color: '#8aa6c8', fontSize: 11 }, itemWidth: 10, itemHeight: 10 },
-  color: ['#2ee6a6', '#2f9bff', '#ffb02e', '#ff5c5c'],
+  legend: { bottom: 0, textStyle: { color: '#93a1ac', fontSize: 11 }, itemWidth: 8, itemHeight: 8 },
+  color: ['#5c9d86', '#6f9db8', '#d3a24a', '#c25a51'],
   series: [{
-    type: 'pie', radius: ['42%', '66%'], center: ['50%', '44%'],
-    label: { color: '#d6e8ff', fontSize: 11 },
+    type: 'pie', radius: ['44%', '66%'], center: ['50%', '44%'],
+    label: { color: '#c9d2d9', fontSize: 11 },
+    itemStyle: { borderColor: '#11171d', borderWidth: 2 },
     data: waterGrade.value
   }]
 }))
 
 const weeklyBar = computed(() => ({
   tooltip: { trigger: 'axis' },
-  legend: { data: ['光学', 'SAR'], textStyle: { color: '#8aa6c8' }, top: 0, right: 0 },
-  grid: { left: 36, right: 12, top: 30, bottom: 26 },
+  legend: { data: ['光学', 'SAR'], textStyle: { color: '#93a1ac' }, top: 0, right: 0 },
+  grid: { left: 34, right: 10, top: 30, bottom: 24 },
   xAxis: { type: 'category', data: weekly.value.days, ...axisStyle },
   yAxis: { type: 'value', ...axisStyle },
   series: [
-    { name: '光学', type: 'bar', stack: 'total', data: weekly.value.optical, itemStyle: { color: '#2f9bff' }, barWidth: 14 },
-    { name: 'SAR', type: 'bar', stack: 'total', data: weekly.value.sar, itemStyle: { color: '#00e5ff' } }
+    { name: '光学', type: 'bar', stack: 'total', data: weekly.value.optical, itemStyle: { color: '#6f9db8' }, barWidth: 12 },
+    { name: 'SAR', type: 'bar', stack: 'total', data: weekly.value.sar, itemStyle: { color: '#9fc0d2' } }
   ]
 }))
 
@@ -187,7 +189,7 @@ const chlaRank = computed(() => {
   const sorted = [...stations.value].sort((a, b) => b.chla - a.chla)
   return {
     tooltip: { trigger: 'axis', formatter: '{b}<br/>叶绿素 a：{c} mg/m³' },
-    grid: { left: 64, right: 30, top: 14, bottom: 24 },
+    grid: { left: 64, right: 30, top: 14, bottom: 22 },
     xAxis: { type: 'value', ...axisStyle },
     yAxis: { type: 'category', data: sorted.map((s) => s.name), ...axisStyle, inverse: true },
     series: [{
@@ -196,10 +198,10 @@ const chlaRank = computed(() => {
         value: s.chla,
         // 悬停图片按风险等级取：高浓度 / 中浓度 / 低浓度
         __media: s.risk === '高' ? 'chl-high' : s.risk === '中' ? 'chl-mid' : 'chl-low',
-        itemStyle: { color: s.risk === '高' ? '#ff5c5c' : s.risk === '中' ? '#ffb02e' : '#2ee6a6' }
+        itemStyle: { color: s.risk === '高' ? '#c25a51' : s.risk === '中' ? '#d3a24a' : '#5c9d86' }
       })),
-      barWidth: 13,
-      label: { show: true, position: 'right', color: '#d6e8ff', fontSize: 11 }
+      barWidth: 11,
+      label: { show: true, position: 'right', color: '#93a1ac', fontSize: 11 }
     }]
   }
 })
@@ -324,48 +326,45 @@ onMounted(async () => {
 .dashboard {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  height: calc(100vh - 88px);
+  gap: 10px;
+  height: calc(100vh - 78px);
 }
 .stat-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  gap: 10px;
 }
 .data-bar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
-  padding: 5px 10px;
-  border-radius: 4px;
-  background: rgba(0, 229, 255, 0.06);
-  border: 1px solid rgba(0, 229, 255, 0.22);
+  gap: 3px 10px;
+  padding: 0 2px;
   font-size: 11px;
-  color: #9db6d4;
-  line-height: 1.5;
+  color: var(--text-sub);
+  line-height: 1.6;
 }
-.data-bar b { color: #00e5ff; font-weight: 600; }
+.data-bar b { color: var(--text-main); font-weight: 600; }
 .data-bar .dot {
-  width: 7px;
-  height: 7px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: #2ee6a6;
-  box-shadow: 0 0 6px #2ee6a6;
+  background: var(--success);
   flex: none;
+  margin-right: -4px;
 }
-.data-bar .sep { color: #3d5a7a; }
+.data-bar .sep { color: rgba(255, 255, 255, 0.22); }
 .main-row {
   flex: 1;
   display: grid;
   grid-template-columns: 23% 1fr 24%;
-  gap: 12px;
+  gap: 10px;
   min-height: 0;
 }
 .col {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   min-height: 0;
 }
 .flex-panel {
@@ -394,18 +393,17 @@ onMounted(async () => {
   gap: 6px;
   max-width: calc(100% - 20px);
   padding: 4px 8px;
-  border-radius: 4px;
-  background: rgba(6, 18, 42, 0.88);
-  border: 1px solid rgba(0, 229, 255, 0.45);
+  border-radius: var(--radius);
+  background: rgba(17, 23, 29, 0.92);
+  border: 1px solid var(--border-strong);
   font-size: 11px;
-  color: #d6e8ff;
+  color: var(--text-main);
 }
 .focus-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: #00e5ff;
-  box-shadow: 0 0 6px #00e5ff;
+  background: var(--accent);
   flex: none;
 }
 .focus-text {
@@ -436,18 +434,18 @@ onMounted(async () => {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  padding: 8px 4px;
-  border-bottom: 1px dashed rgba(64, 158, 255, 0.15);
+  padding: 9px 4px;
+  border-bottom: 1px solid var(--border-color);
   cursor: pointer;
   border-left: 2px solid transparent;
   transition: background 0.15s, border-color 0.15s;
 }
 .alert-item:hover {
-  background: rgba(64, 158, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
 }
 .alert-item.active {
-  background: rgba(0, 229, 255, 0.1);
-  border-left-color: #00e5ff;
+  background: rgba(255, 255, 255, 0.05);
+  border-left-color: var(--accent);
 }
 .alert-content {
   flex: 1;
@@ -481,11 +479,11 @@ onMounted(async () => {
   font-variant-numeric: tabular-nums;
 }
 .alert-time.link .at-clock {
-  color: #00e5ff;
+  color: var(--accent);
   text-decoration: underline dotted;
 }
 .alert-item.active .at-clock {
-  color: #00e5ff;
+  color: var(--accent);
   font-weight: 600;
 }
 </style>

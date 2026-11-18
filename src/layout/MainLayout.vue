@@ -2,7 +2,7 @@
   <el-container class="app-container">
     <el-aside width="230px" class="app-aside">
       <div class="logo-box">
-        <el-icon :size="30" color="#00e5ff"><Position /></el-icon>
+        <el-icon :size="24" class="logo-icon"><Position /></el-icon>
         <div class="logo-text">
           <div class="logo-title">海南近海遥感监测</div>
           <div class="logo-sub">台风灾害评估系统</div>
@@ -13,8 +13,8 @@
         router
         class="app-menu"
         background-color="transparent"
-        text-color="#9fc4ef"
-        active-text-color="#00e5ff"
+        text-color="#93a1ac"
+        active-text-color="#e6ebef"
       >
         <el-menu-item v-for="item in menus" :key="item.path" :index="item.path">
           <el-icon><component :is="item.icon" /></el-icon>
@@ -26,12 +26,9 @@
 
     <el-container>
       <el-header class="app-header">
-        <div class="header-title">
-          <span class="title-bar"></span>
-          {{ currentTitle }}
-        </div>
+        <div class="header-title">{{ currentTitle }}</div>
         <div class="header-right">
-          <el-tag type="info" effect="dark" round>多源卫星：Sentinel · Landsat · 高分</el-tag>
+          <span class="header-meta">Sentinel · Landsat · 高分</span>
           <el-button text class="map-toggle" @click="appStore.toggleBaseMap()">
             <el-icon><Switch /></el-icon>
             {{ appStore.baseMapType === 'vector' ? '影像底图' : '矢量底图' }}
@@ -86,15 +83,11 @@ onBeforeUnmount(() => clearInterval(timer))
 <style scoped>
 .app-container {
   height: 100%;
-  background:
-    radial-gradient(ellipse at 20% 0%, rgba(20, 80, 160, 0.25), transparent 55%),
-    radial-gradient(ellipse at 100% 100%, rgba(0, 120, 160, 0.18), transparent 50%),
-    var(--bg-deep);
+  background: var(--bg-deep);
 }
 
 .app-aside {
-  position: relative;
-  background: linear-gradient(180deg, rgba(8, 24, 52, 0.95), rgba(5, 14, 34, 0.95));
+  background: #0d1217;
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
@@ -107,86 +100,87 @@ onBeforeUnmount(() => clearInterval(timer))
   padding: 18px 16px;
   border-bottom: 1px solid var(--border-color);
 }
+.logo-icon {
+  color: var(--primary);
+}
 .logo-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #eaf4ff;
-  letter-spacing: 1px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+  letter-spacing: 0.3px;
 }
 .logo-sub {
   font-size: 11px;
-  color: var(--text-sub);
-  margin-top: 2px;
-  letter-spacing: 2px;
+  color: var(--text-dim);
+  margin-top: 3px;
 }
 
 .app-menu {
   flex: 1;
   border-right: none;
-  padding: 10px;
+  padding: 10px 8px;
 }
 .app-menu :deep(.el-menu-item) {
-  height: 46px;
-  line-height: 46px;
-  border-radius: 6px;
-  margin-bottom: 6px;
+  height: 40px;
+  line-height: 40px;
+  font-size: 13px;
+  border-radius: var(--radius);
+  margin-bottom: 2px;
+  border-left: 2px solid transparent;
 }
 .app-menu :deep(.el-menu-item.is-active) {
-  background: linear-gradient(90deg, rgba(47, 155, 255, 0.28), rgba(47, 155, 255, 0.05));
-  box-shadow: inset 3px 0 0 var(--accent);
+  background: rgba(255, 255, 255, 0.05);
+  border-left-color: var(--primary);
 }
 .app-menu :deep(.el-menu-item:hover) {
-  background: rgba(47, 155, 255, 0.12);
+  background: rgba(255, 255, 255, 0.035);
 }
 
 .aside-footer {
   padding: 12px;
   text-align: center;
   font-size: 11px;
-  color: #4d678a;
+  color: var(--text-dim);
   border-top: 1px solid var(--border-color);
 }
 
 .app-header {
-  height: 60px;
+  height: 54px;
+  padding: 0 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(8, 24, 52, 0.6);
+  background: #0d1217;
   border-bottom: 1px solid var(--border-color);
 }
 .header-title {
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  color: #eaf4ff;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.title-bar {
-  width: 5px;
-  height: 20px;
-  background: linear-gradient(180deg, var(--accent), var(--primary));
-  border-radius: 2px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: var(--text-main);
 }
 .header-right {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
+}
+.header-meta {
+  font-size: 11px;
+  color: var(--text-dim);
 }
 .map-toggle {
-  color: var(--primary-light) !important;
+  color: var(--text-sub) !important;
+  font-size: 12px;
 }
 .clock {
-  font-family: 'DIN', 'Consolas', monospace;
-  color: var(--primary-light);
-  font-size: 15px;
-  letter-spacing: 1px;
+  font-family: Consolas, 'Courier New', monospace;
+  color: var(--text-sub);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 
 .app-main {
-  padding: 14px;
+  padding: 12px;
   overflow-y: auto;
 }
 </style>

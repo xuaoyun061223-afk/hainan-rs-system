@@ -6,7 +6,7 @@
   "description": "基于多源卫星遥感的海南近海生态环境监测与台风灾害评估系统",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/prune-cesium.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
